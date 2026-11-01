@@ -397,6 +397,13 @@ async function loadHistory() {
 
 function fillWorkflowSelect(select, current) {
   select.innerHTML = "";
+  if (!current) {
+    // 没配工作流时给一个空选项，避免 <select> 自动选中第一项、保存时把“第一项”当成用户选择
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "（未设置，用默认）";
+    select.appendChild(option);
+  }
   for (const name of state.files) {
     const option = document.createElement("option");
     option.value = name;
@@ -409,25 +416,30 @@ function fillWorkflowSelect(select, current) {
     option.textContent = current + "（缺失）";
     select.appendChild(option);
   }
-  if (current) select.value = current;
+  select.value = current || "";
 }
 
 function applyConfig(data) {
   state.config = data.config || {};
+  // 先填下拉选项、再回填值：<select> 在还没有 option 时赋值会被丢弃，
+  // 随后浏览器自动选中第一项，保存就把「列表第一项」写回了配置
+  //（早期版本三条链路全被写成 draw-cat.json 的根因）。
+  for (const select of document.querySelectorAll("select[data-wf]")) {
+    const key = String(select.dataset.cfg || "");
+    fillWorkflowSelect(select, getPath(state.config, key));
+    if (!select.dataset.bound) {
+      select.dataset.bound = "1";
+      select.addEventListener("change", () => {
+        const kind = key.split(".")[0];
+        state.config[kind] = Object.assign({}, state.config[kind] || {}, { workflow: select.value });
+        autofillFromWorkflow(kind, select.value);
+      });
+    }
+  }
   for (const input of document.querySelectorAll("[data-cfg]")) {
     const value = getPath(state.config, input.dataset.cfg);
     if (input.type === "checkbox") input.checked = Boolean(value);
     else if (value !== undefined && value !== null) input.value = value;
-  }
-  for (const select of document.querySelectorAll("select[data-wf]")) {
-    fillWorkflowSelect(select, select.value);
-    if (!select.dataset.bound) {
-      select.dataset.bound = "1";
-      select.addEventListener("change", () => {
-        const kind = String(select.dataset.cfg || "").split(".")[0];
-        autofillFromWorkflow(kind, select.value);
-      });
-    }
   }
 }
 
