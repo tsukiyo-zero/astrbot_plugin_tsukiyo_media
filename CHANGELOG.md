@@ -2,6 +2,12 @@
 
 遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.6.1] - 2026-11-02
+
+### 修复
+- **`/draw`、`/画图`、`/img` 全部失效**：v0.5.2 起把三个 `@filter.command` 叠在同一个函数上，而 AstrBot 的 handler 过滤器是 **AND** 关系（`waking_check/stage.py`），等于要求消息同时等于三个命令，永远匹配不上。改为单命令 + `alias={"画图", "draw"}`
+- 新增启动自检日志 `[TsukiyoMedia] 命令已注册: img(draw, 画图)`，以及 `tests/test_commands.py` 防止再叠装饰器
+
 ## [0.6.0] - 2026-11-02
 
 ### 新增

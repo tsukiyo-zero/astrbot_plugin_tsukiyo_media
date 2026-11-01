@@ -2,7 +2,7 @@ name: astrbot_plugin_tsukiyo_media
 display_name: 月夜绘影
 short_desc: 本地 ComfyUI / 在线 API 的低耦合生成插件：文生图、自拍、参考图、编辑
 desc: 低耦合的生成插件：手动配置本地 ComfyUI 或在线 API，支持文生图、自拍、参考图、编辑，预留视频。工作流按图结构自动绑定，模型参数默认沿用作者值。
-version: 0.6.0
+version: 0.6.1
 author: tsukiyo-zero
 repo: https://github.com/tsukiyo-zero/astrbot_plugin_tsukiyo_media
 astrbot_version: ">=4.16"

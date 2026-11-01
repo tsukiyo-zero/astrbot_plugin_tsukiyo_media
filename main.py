@@ -49,7 +49,7 @@ _GROUP_BLOCK_HINTS = ("nude", "naked", "topless", "裸", "脱光", "全裸")
     "tsukiyo_media",
     "Mio (tsukiyo-zero)",
     "低耦合生成插件：本地 ComfyUI / 在线 API，文生图·自拍·参考图·编辑，预留视频",
-    "0.6.0",
+    "0.6.1",
 )
 class TsukiyoMediaPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
@@ -69,11 +69,32 @@ class TsukiyoMediaPlugin(Star):
         self._init_runtime()
 
         # 插件可视化视图的后端 API：只在启动时注册一次（/img reload 不重复注册）
+        self._log_registered_commands()
+
         self.page_api = PageAPI(self)
         try:
             self.page_api.register(context)
         except Exception as exc:  # pragma: no cover - 老版本或权限问题不影响主功能
             logger.warning("[TsukiyoMedia] 插件页面注册失败：%s", exc)
+
+    def _log_registered_commands(self) -> None:
+        """启动自检：确认本插件的命令/别名真的注册上了（过滤器是 AND 关系，叠多个会失效）。"""
+        try:
+            from astrbot.core.star.star_handler import star_handlers_registry
+
+            commands: list[str] = []
+            for handler in star_handlers_registry:
+                if not str(getattr(handler, "handler_full_name", "")).endswith("img_command"):
+                    continue
+                for item in getattr(handler, "event_filters", []) or ():
+                    name = getattr(item, "command_name", "")
+                    if not name:
+                        continue
+                    alias = sorted(getattr(item, "alias", set()) or ())
+                    commands.append(name + ("(" + ", ".join(alias) + ")" if alias else ""))
+            logger.info("[TsukiyoMedia] 命令已注册: %s", " / ".join(commands) or "(无)")
+        except Exception as exc:  # pragma: no cover - 只影响日志
+            logger.debug("[TsukiyoMedia] 命令自检跳过: %s", exc)
 
     # ------------------------------------------------------------------ 装配
     def _init_runtime(self) -> None:
@@ -170,9 +191,7 @@ class TsukiyoMediaPlugin(Star):
             return None
 
     # ------------------------------------------------------------------ 命令
-    @filter.command("img")
-    @filter.command("画图")
-    @filter.command("draw")
+    @filter.command("img", alias={"画图", "draw"})
     async def img_command(self, event: AstrMessageEvent):
         """本地 ComfyUI 生图：/img [selfie|edit|ref] [model=key] [size=832x1216] [seed=1] 描述"""
         raw = str(getattr(event, "message_str", "") or "")
