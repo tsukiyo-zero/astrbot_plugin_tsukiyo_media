@@ -43,6 +43,13 @@
           <textarea id="prompt" rows="6" placeholder="1girl, beach, sunset, walking, smiling"></textarea>
         </div>
 
+        <div class="row" id="reference-row">
+          <label>参考图</label>
+          <input id="reference" type="file" accept="image/png,image/jpeg,image/webp" />
+          <span class="hint" id="reference-hint">参考图/编辑必须上传</span>
+        </div>
+        <div class="ref-preview" id="ref-preview" hidden></div>
+
         <details class="advanced">
           <summary>高级参数</summary>
           <div class="row">

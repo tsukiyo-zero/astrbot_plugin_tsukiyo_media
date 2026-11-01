@@ -21,9 +21,13 @@ const ui = {
   detail: el("prompt-detail"),
   finalPrompt: el("prompt-final"),
   historyGrid: el("history-grid"),
+  reference: el("reference"),
+  referenceHint: el("reference-hint"),
+  refPreview: el("ref-preview"),
 };
 
 let defaultModel = "";
+let referencePath = "";
 
 function setHint(text, tone = "") {
   ui.genHint.textContent = text || "";
@@ -81,6 +85,8 @@ function syncModelHint() {
     ui.kind.value === "text2img" || ui.kind.value === "auto"
       ? "文生图按此模型出图"
       : "该链路用配置里的工作流，模型下拉不生效";
+  const needsRef = ui.kind.value === "reference" || ui.kind.value === "edit";
+  ui.referenceHint.textContent = needsRef ? "这个链路必须上传一张图" : "自拍/文生图不需要参考图";
 }
 
 function showImage(image) {
@@ -124,12 +130,19 @@ async function generate() {
     ui.prompt.focus();
     return;
   }
+  const kind = ui.kind.value;
+  if ((kind === "reference" || kind === "edit") && !referencePath) {
+    setHint("参考图 / 编辑需要先上传一张图", "bad");
+    ui.reference.focus();
+    return;
+  }
   ui.generate.disabled = true;
   setHint("生成中…");
   const payload = {
     prompt,
-    kind: ui.kind.value,
+    kind,
     model_key: ui.model.value || "",
+    reference_path: referencePath,
     width: Number(ui.width.value) || 0,
     height: Number(ui.height.value) || 0,
     seed: Number(ui.seed.value),
@@ -183,10 +196,49 @@ async function loadHistory() {
   }
 }
 
+async function uploadReference(file) {
+  if (!file) {
+    referencePath = "";
+    ui.refPreview.hidden = true;
+    ui.refPreview.innerHTML = "";
+    return;
+  }
+  if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
+    setHint("只支持 PNG / JPEG / WebP", "bad");
+    return;
+  }
+  if (file.size > 20 * 1024 * 1024) {
+    setHint("参考图超过 20MB，先压一下", "bad");
+    return;
+  }
+  setHint("上传参考图…");
+  try {
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error || new Error("读取失败"));
+      reader.readAsDataURL(file);
+    });
+    const result = await bridge.apiPost("upload", { filename: file.name, data: dataUrl });
+    referencePath = result.path || "";
+    ui.refPreview.hidden = false;
+    ui.refPreview.innerHTML = "";
+    const img = document.createElement("img");
+    img.src = dataUrl;
+    img.alt = "reference";
+    ui.refPreview.appendChild(img);
+    setHint("参考图已就绪", "ok");
+  } catch (err) {
+    referencePath = "";
+    setHint(`上传失败：${err.message || err}`, "bad");
+  }
+}
+
 ui.generate.addEventListener("click", generate);
 ui.refresh.addEventListener("click", loadStatus);
 ui.historyBtn.addEventListener("click", loadHistory);
 ui.kind.addEventListener("change", syncModelHint);
+ui.reference.addEventListener("change", () => uploadReference(ui.reference.files && ui.reference.files[0]));
 ui.prompt.addEventListener("keydown", (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key === "Enter") generate();
 });

@@ -337,3 +337,15 @@ button.ghost {
   object-fit: cover;
   display: block;
 }
+
+.ref-preview {
+  margin: 0 0 10px;
+}
+
+.ref-preview img {
+  max-width: 160px;
+  max-height: 160px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  display: block;
+}

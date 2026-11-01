@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import base64
 import mimetypes
+import time
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +44,7 @@ class PageAPI:
         routes = (
             ("/status", self.status, ["GET"], "生成后端状态与模型列表"),
             ("/generate", self.generate, ["POST"], "提交一次生成"),
+            ("/upload", self.upload, ["POST"], "上传参考图"),
             ("/history", self.history, ["GET"], "最近生成记录"),
             ("/file", self.file, ["GET"], "读取生成产物"),
         )
@@ -88,10 +90,12 @@ class PageAPI:
         plugin = self.plugin
         if plugin.pipeline is None:
             return error_response("插件尚未初始化", status_code=503)
+        reference_path = str(payload.get("reference_path") or "").strip()
         req = ImageRequest(
             prompt=prompt,
             kind=normalize_kind(payload.get("kind") or "auto"),
             model_key=str(payload.get("model_key") or ""),
+            references=[reference_path] if reference_path else [],
             width=int(payload.get("width") or 0),
             height=int(payload.get("height") or 0),
             seed=int(payload.get("seed") or -1),
@@ -104,6 +108,40 @@ class PageAPI:
         data["kind"] = result.kind
         data["images"] = [self._image_info(path) for path in result.paths]
         return json_response(data)
+
+    async def upload(self):
+        """接收页面传上来的参考图（base64 JSON），存到插件数据目录，返回容器内路径。
+
+        页面通过 bridge.apiPost 走 JSON，所以这里不做 multipart，直接收 base64。
+        """
+        plugin = self.plugin
+        payload = await request.json(default={})
+        raw = str(payload.get("data") or "")
+        if not raw:
+            return error_response("缺少 data（base64）", status_code=400)
+        if "," in raw[:64]:  # 允许直接传 dataURL
+            raw = raw.split(",", 1)[1]
+        try:
+            blob = base64.b64decode(raw, validate=False)
+        except Exception:  # noqa: BLE001
+            return error_response("base64 解码失败", status_code=400)
+        if not blob:
+            return error_response("空文件", status_code=400)
+        if len(blob) > 20 * 1024 * 1024:
+            return error_response("参考图超过 20MB", status_code=413)
+        suffix = Path(str(payload.get("filename") or "upload.png")).suffix.lower()
+        if suffix not in {".png", ".jpg", ".jpeg", ".webp"}:
+            suffix = ".png"
+        target_dir = plugin.reference_dir
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target = target_dir / f"ui_{int(time.time() * 1000)}{suffix}"
+        try:
+            target.write_bytes(blob)
+        except OSError as exc:
+            return error_response(f"保存失败：{exc}", status_code=500)
+        return json_response(
+            {"ok": True, "path": str(target), "name": target.name, "size": target.stat().st_size}
+        )
 
     async def history(self):
         plugin = self.plugin
@@ -132,15 +170,18 @@ class PageAPI:
         raw = request.query.get("path", "", type=str) or ""
         if not raw:
             return error_response("缺少 path", status_code=400)
-        root = plugin.pipeline.output_dir.resolve() if plugin.pipeline else None
-        if root is None:
+        roots = []
+        if plugin.pipeline:
+            roots.append(plugin.pipeline.output_dir.resolve())
+        roots.append(plugin.reference_dir.resolve())
+        if not roots:
             return error_response("输出目录未初始化", status_code=503)
         try:
             target = Path(raw).expanduser().resolve()
         except OSError:
             return error_response("非法路径", status_code=400)
-        if target != root and root not in target.parents:
-            return error_response("只允许读取输出目录内的文件", status_code=403)
+        if not any(target == root or root in target.parents for root in roots):
+            return error_response("只允许读取插件自己的产物/参考图目录", status_code=403)
         if not target.is_file():
             return error_response("文件不存在", status_code=404)
         content_type = mimetypes.guess_type(target.name)[0] or "image/png"

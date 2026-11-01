@@ -5,8 +5,8 @@
 ## [0.2.0] - 2026-11-02
 
 ### 新增
-- **可视化页面** `views/studio`：后端状态（版本/显存/队列）、模型下拉、链路选择、提示词与高级参数、生成并预览、最近生成缩略图、实际提交提示词展开
-  - 后端 API：`GET /status`、`POST /generate`、`GET /history`、`GET /file`（仅允许读输出目录）
+- **可视化页面** `views/studio`：后端状态（版本/显存/队列）、模型下拉、链路选择、提示词与高级参数、参考图上传与预览、生成并预览、最近生成缩略图、实际提交提示词展开
+  - 后端 API：`GET /status`、`POST /generate`、`POST /upload`（base64 JSON）、`GET /history`、`GET /file`（仅允许读产物/参考图目录）
   - 通过 `window.AstrBotPluginView` bridge 调用，无需 Dashboard 改前端
 - 自拍档 `identity_prompt` 默认值填了一个**示例角色**（蓝发鲸鱼娘），改成自己角色即可
 
