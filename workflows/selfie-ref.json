@@ -1,0 +1,153 @@
+{
+ "load": {
+  "class_type": "CheckpointLoaderSimple",
+  "inputs": {
+   "ckpt_name": "oneObsession_v24.safetensors"
+  }
+ },
+ "ipamodel": {
+  "class_type": "IPAdapterModelLoader",
+  "inputs": {
+   "ipadapter_file": "ip-adapter-plus_sdxl_vit-h.safetensors"
+  }
+ },
+ "clipvision": {
+  "class_type": "CLIPVisionLoader",
+  "inputs": {
+   "clip_name": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"
+  }
+ },
+ "ref": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "character_refs_normal.png"
+  },
+  "_meta": {
+   "title": "参考图（角色身份）"
+  }
+ },
+ "refscale": {
+  "class_type": "ImageScale",
+  "inputs": {
+   "image": [
+    "ref",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "width": 768,
+   "height": 768,
+   "crop": "center"
+  }
+ },
+ "ipa": {
+  "class_type": "IPAdapterAdvanced",
+  "inputs": {
+   "model": [
+    "load",
+    0
+   ],
+   "ipadapter": [
+    "ipamodel",
+    0
+   ],
+   "clip_vision": [
+    "clipvision",
+    0
+   ],
+   "image": [
+    "refscale",
+    0
+   ],
+   "weight": 0.45,
+   "weight_type": "ease out",
+   "combine_embeds": "concat",
+   "start_at": 0.0,
+   "end_at": 1.0,
+   "embeds_scaling": "V only"
+  }
+ },
+ "pos": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "load",
+    1
+   ],
+   "text": "masterpiece, best quality, amazing quality, very awa, absurdres, newest, very aesthetic, depth of field, highres, 1girl, solo, blue hair, long hair, gradient hair, blue eyes, fish fin ears on the sides of the head, translucent blue fins, whale tail with deep blue star pattern, ahoge"
+  },
+  "_meta": {
+   "title": "正面：本次画面描述（动态传入）"
+  }
+ },
+ "neg": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "load",
+    1
+   ],
+   "text": "worst quality, normal quality, anatomical nonsense, bad anatomy, interlocked fingers, extra fingers, watermark, simple background, transparent, low quality, logo, text, signature, face backlighting, backlighting"
+  },
+  "_meta": {
+   "title": "负面：本次要求（动态传入）"
+  }
+ },
+ "latent": {
+  "class_type": "EmptyLatentImage",
+  "inputs": {
+   "width": 832,
+   "height": 1216,
+   "batch_size": 1
+  }
+ },
+ "sample": {
+  "class_type": "KSampler",
+  "inputs": {
+   "model": [
+    "ipa",
+    0
+   ],
+   "positive": [
+    "pos",
+    0
+   ],
+   "negative": [
+    "neg",
+    0
+   ],
+   "latent_image": [
+    "latent",
+    0
+   ],
+   "seed": 42,
+   "steps": 30,
+   "cfg": 4.5,
+   "sampler_name": "euler_ancestral",
+   "scheduler": "normal",
+   "denoise": 1.0
+  }
+ },
+ "decode": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "sample",
+    0
+   ],
+   "vae": [
+    "load",
+    2
+   ]
+  }
+ },
+ "save": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "decode",
+    0
+   ],
+   "filename_prefix": "qq-refgen"
+  }
+ }
+}

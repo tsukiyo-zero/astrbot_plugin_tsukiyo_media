@@ -1,0 +1,103 @@
+{
+  "load": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "miaomiaoPixel_vPred11.safetensors"
+    }
+  },
+  "prediction": {
+    "class_type": "ModelSamplingDiscrete",
+    "inputs": {
+      "model": [
+        "load",
+        0
+      ],
+      "sampling": "v_prediction",
+      "zsnr": true
+    }
+  },
+  "pos": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "load",
+        1
+      ],
+      "text": "masterpiece, best quality, absurdres, newest, very aesthetic, amazing quality, highres, sensitive"
+    },
+    "_meta": {
+      "title": "正面：作者推荐词＋本次画面描述（动态传入）"
+    }
+  },
+  "neg": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "load",
+        1
+      ],
+      "text": "lowres,(bad),bad feet,text,error,fewer,extra,missing,worst quality,jpeg artifacts,low quality,watermark,unfinished,displeasing,oldest,early,chromatic aberration,signature,artistic error,username,scan,[abstract],english text,shiny_skin"
+    },
+    "_meta": {
+      "title": "负面：该模型作者模板（未推荐则留空）"
+    }
+  },
+  "latent": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 768,
+      "height": 1280,
+      "batch_size": 1
+    }
+  },
+  "sample": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "prediction",
+        0
+      ],
+      "positive": [
+        "pos",
+        0
+      ],
+      "negative": [
+        "neg",
+        0
+      ],
+      "latent_image": [
+        "latent",
+        0
+      ],
+      "seed": 42,
+      "steps": 30,
+      "cfg": 6,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "normal",
+      "denoise": 1.0
+    }
+  },
+  "decode": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "sample",
+        0
+      ],
+      "vae": [
+        "load",
+        2
+      ]
+    }
+  },
+  "save": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "decode",
+        0
+      ],
+      "filename_prefix": "qq-draw/pixel"
+    }
+  }
+}
