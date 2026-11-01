@@ -14,6 +14,7 @@ from typing import Any
 
 from astrbot.api import logger
 
+from .backends.comfyui.binder import resolve_roles
 from .core.types import ImageRequest, normalize_kind
 
 PLUGIN_NAME = "astrbot_plugin_tsukiyo_media"
@@ -73,6 +74,7 @@ class PageAPI:
             ("/settings", self.save_settings, ["POST"], "保存设置"),
             ("/models", self.save_models, ["POST"], "保存模型开关/默认/工作流"),
             ("/workflows", self.workflows, ["GET"], "工作流文件列表"),
+            ("/workflows/inspect", self.inspect_workflow, ["GET"], "读取工作流作者参数"),
             ("/workflows/notes", self.save_workflow_notes, ["POST"], "保存工作流说明"),
             ("/workflows/upload", self.upload_workflow, ["POST"], "上传工作流 JSON"),
             ("/progress", self.progress, ["GET"], "生成进度 SSE"),
@@ -492,6 +494,48 @@ class PageAPI:
         except OSError as exc:
             return error_response(f"写入失败：{exc}", status_code=500)
         return json_response({"ok": True, "name": name, **self._settings_payload()})
+
+    async def inspect_workflow(self):
+        """读取一个工作流的作者参数（steps/cfg/采样器/尺寸/IPA 权重/结构类型）。"""
+        name = request.query.get("name", "", type=str) or ""
+        if not name:
+            return error_response("缺少 name", status_code=400)
+        plugin = self.plugin
+        if plugin.pipeline is None:
+            return error_response("插件尚未初始化", status_code=503)
+        try:
+            workflow = plugin.pipeline.load_workflow(name)
+            roles = resolve_roles(workflow)
+        except Exception as exc:  # noqa: BLE001
+            return error_response(f"解析工作流失败：{exc}", status_code=400)
+
+        nodes = {nid: node for nid, node in workflow.items() if isinstance(node, dict)}
+        sampler = (nodes.get(roles.sampler) or {}).get("inputs") or {}
+        data: dict[str, Any] = {
+            "ok": True,
+            "name": name,
+            "steps": sampler.get("steps"),
+            "cfg": sampler.get("cfg"),
+            "sampler_name": sampler.get("sampler_name"),
+            "scheduler": sampler.get("scheduler"),
+            "denoise": sampler.get("denoise"),
+            "width": None,
+            "height": None,
+            "ipadapter_weight": None,
+            "has_identity_ref": bool(roles.identity_ref),
+            "has_source_image": bool(roles.source_image),
+            "mode": "img2img" if roles.vae_encode else "text2img",
+        }
+        if roles.empty_latent:
+            latent = (nodes.get(roles.empty_latent) or {}).get("inputs") or {}
+            data["width"], data["height"] = latent.get("width"), latent.get("height")
+        elif roles.image_scale:
+            scale = (nodes.get(roles.image_scale) or {}).get("inputs") or {}
+            data["width"], data["height"] = scale.get("width"), scale.get("height")
+        if roles.ipadapter:
+            ipa = (nodes.get(roles.ipadapter) or {}).get("inputs") or {}
+            data["ipadapter_weight"] = ipa.get("weight")
+        return json_response(data)
 
     async def workflows(self):
         try:

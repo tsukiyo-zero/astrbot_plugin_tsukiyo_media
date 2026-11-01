@@ -394,6 +394,13 @@ function applyConfig(data) {
   }
   for (const select of document.querySelectorAll("select[data-wf]")) {
     fillWorkflowSelect(select, select.value);
+    if (!select.dataset.bound) {
+      select.dataset.bound = "1";
+      select.addEventListener("change", () => {
+        const kind = String(select.dataset.cfg || "").split(".")[0];
+        autofillFromWorkflow(kind, select.value);
+      });
+    }
   }
 }
 
@@ -484,6 +491,7 @@ function modelRow(model, index) {
     const input = document.createElement("input");
     input.value = params[field] || "";
     input.placeholder = field === "sampler_name" ? "euler_ancestral" : "normal";
+    input.setAttribute("list", field === "sampler_name" ? "sampler-options" : "scheduler-options");
     input.className = "cell-text";
     input.addEventListener("input", () => {
       const target = state.models[index];
@@ -508,9 +516,17 @@ function modelRow(model, index) {
 
   const del = document.createElement("button");
   del.className = "ghost danger";
-  del.textContent = "删除";
+  del.textContent = model._confirmDelete ? "确认删除" : "删除";
+  if (model._confirmDelete) del.classList.add("confirming");
   del.addEventListener("click", () => {
-    if (!confirm("删除模型 " + (model.key || "(新)") + "？保存后生效")) return;
+    if (!model._confirmDelete) {
+      state.models.forEach((item) => {
+        item._confirmDelete = false;
+      });
+      state.models[index]._confirmDelete = true;
+      renderModelTable();
+      return;
+    }
     state.models.splice(index, 1);
     renderModelTable();
   });
@@ -557,13 +573,25 @@ function renderWorkflowTable() {
     tdNote.appendChild(note);
 
     const tdUse = document.createElement("td");
+    tdUse.className = "cell-ro";
     const owners = state.usage[name] || [];
     tdUse.textContent = owners.length ? owners.join(", ") : "未被引用";
-    if (!owners.length) tdUse.className = "hint";
 
     const tdKind = document.createElement("td");
-    tdKind.textContent = kindMap[name] || "";
-    if (!kindMap[name]) tdKind.className = "hint";
+    const actions = document.createElement("div");
+    actions.className = "kind-actions";
+    for (const pair of [["selfie", "自拍"], ["reference", "参考图"], ["edit", "编辑"]]) {
+      const kind = pair[0];
+      const label = pair[1];
+      const active = ((state.config[kind] || {}).workflow || "") === name;
+      const btn = document.createElement("button");
+      btn.className = "ghost" + (active ? " active" : "");
+      btn.textContent = active ? "✓ " + label : label;
+      btn.title = active ? "当前已用于" + label : "设为" + label + "档工作流";
+      btn.addEventListener("click", () => assignKind(kind, name));
+      actions.appendChild(btn);
+    }
+    tdKind.appendChild(actions);
 
     tr.append(tdName, tdNote, tdUse, tdKind);
     body.appendChild(tr);
@@ -571,6 +599,42 @@ function renderWorkflowTable() {
   if (!state.files.length) {
     body.innerHTML = '<tr><td colspan="4" class="hint">工作流目录里没有 json，先上传一个</td></tr>';
   }
+}
+
+async function autofillFromWorkflow(kind, name) {
+  const hint = document.querySelector('[data-inspect-hint="' + kind + '"]');
+  if (!kind || !name) return;
+  try {
+    const data = await bridge.apiGet("workflows/inspect", { name });
+    const setVal = (suffix, value) => {
+      const input = document.querySelector('[data-cfg="' + kind + "." + suffix + '"]');
+      if (input && value !== null && value !== undefined && value !== "") input.value = value;
+    };
+    setVal("width", data.width);
+    setVal("height", data.height);
+    setVal("ipadapter_weight", data.ipadapter_weight);
+    if (kind === "edit") setVal("denoise", data.denoise);
+    if (hint) {
+      const size = data.width && data.height ? data.width + "×" + data.height : "沿用源图";
+      hint.textContent =
+        "已按工作流填入： " + (data.steps ?? "-") + " 步 / CFG " + (data.cfg ?? "-") + " / " +
+        (data.sampler_name ?? "-") + " / " + size +
+        (data.ipadapter_weight !== null && data.ipadapter_weight !== undefined ? " / IPA " + data.ipadapter_weight : "") +
+        "（保存后生效）";
+    }
+  } catch (err) {
+    if (hint) hint.textContent = "读取工作流参数失败：" + (err.message || err);
+  }
+}
+
+function assignKind(kind, name) {
+  state.config[kind] = Object.assign({}, state.config[kind] || {}, { workflow: name });
+  const select = document.querySelector('select[data-cfg="' + kind + '.workflow"]');
+  if (select) select.value = name;
+  autofillFromWorkflow(kind, name);
+  renderWorkflowTable();
+  const labels = { selfie: "自拍", reference: "参考图", edit: "编辑" };
+  setStatus("已把 " + name + " 设为「" + (labels[kind] || kind) + "」工作流（记得点保存）", "warn");
 }
 
 function renderDiagnostics(items) {

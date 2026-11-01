@@ -163,32 +163,35 @@
       <section class="panel">
         <h2>三档工作流</h2>
         <div class="grid3">
-          <fieldset>
+          <fieldset data-kind="selfie">
             <legend>自拍</legend>
             <label>工作流<select data-cfg="selfie.workflow" data-wf></select></label>
             <label>人设特征词<textarea rows="3" data-cfg="selfie.identity_prompt"></textarea></label>
             <label>固定构图词<input data-cfg="selfie.fixed_prompt" /></label>
             <label>人设参考图<input data-cfg="selfie.reference_image" /></label>
+            <span class="hint" data-inspect-hint="selfie"></span>
             <div class="grid3">
               <label>IPA<input type="number" step="0.05" data-cfg="selfie.ipadapter_weight" /></label>
               <label>宽<input type="number" step="64" data-cfg="selfie.width" /></label>
               <label>高<input type="number" step="64" data-cfg="selfie.height" /></label>
             </div>
           </fieldset>
-          <fieldset>
+          <fieldset data-kind="reference">
             <legend>参考图</legend>
             <label>工作流<select data-cfg="reference.workflow" data-wf></select></label>
             <label>固定追加词<input data-cfg="reference.fixed_prompt" /></label>
+            <span class="hint" data-inspect-hint="reference"></span>
             <div class="grid3">
               <label>IPA<input type="number" step="0.05" data-cfg="reference.ipadapter_weight" /></label>
               <label>宽<input type="number" step="64" data-cfg="reference.width" /></label>
               <label>高<input type="number" step="64" data-cfg="reference.height" /></label>
             </div>
           </fieldset>
-          <fieldset>
+          <fieldset data-kind="edit">
             <legend>编辑</legend>
             <label>工作流<select data-cfg="edit.workflow" data-wf></select></label>
             <label>固定追加词<input data-cfg="edit.fixed_prompt" /></label>
+            <span class="hint" data-inspect-hint="edit"></span>
             <div class="grid3">
               <label>重绘<input type="number" step="0.05" data-cfg="edit.denoise" /></label>
               <label>宽<input type="number" step="64" data-cfg="edit.width" /></label>
@@ -237,12 +240,34 @@
         <p class="hint">要求 ComfyUI 的 <b>API 格式</b>（节点id → {class_type, inputs}）。「说明」存在插件数据目录，不改工作流文件。</p>
         <div class="table-wrap">
           <table class="models">
-            <thead><tr><th>文件</th><th>说明</th><th>被哪些模型使用</th><th>用于档位</th></tr></thead>
+            <thead><tr><th>文件</th><th>说明</th><th>被哪些模型使用</th><th>当前用于（在三档里配）</th></tr></thead>
             <tbody id="wf-body"></tbody>
           </table>
         </div>
       </section>
     </section>
+
+    <datalist id="sampler-options">
+      <option value="euler_ancestral"></option>
+      <option value="euler"></option>
+      <option value="dpmpp_2m"></option>
+      <option value="dpmpp_2m_sde"></option>
+      <option value="dpmpp_sde"></option>
+      <option value="dpmpp_3m_sde"></option>
+      <option value="ddim"></option>
+      <option value="uni_pc"></option>
+      <option value="heun"></option>
+      <option value="lcm"></option>
+    </datalist>
+    <datalist id="scheduler-options">
+      <option value="normal"></option>
+      <option value="karras"></option>
+      <option value="exponential"></option>
+      <option value="sgm_uniform"></option>
+      <option value="simple"></option>
+      <option value="ddim_uniform"></option>
+      <option value="beta"></option>
+    </datalist>
 
     <script type="module" src="./app.js"></script>
   </body>
