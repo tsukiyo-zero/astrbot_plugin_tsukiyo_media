@@ -191,6 +191,17 @@ class ImagePipeline:
             return ""
         return str(workflow.get(roles.checkpoint, {}).get("inputs", {}).get("ckpt_name") or "")
 
+    def author_prompts(self, workflow_name: str) -> tuple[str, str]:
+        """读某个工作流里的作者正负向词；读不到返回空（保持专用工作流原样）。"""
+        try:
+            workflow = self.load_workflow(workflow_name)
+            roles = resolve_roles(workflow)
+        except (WorkflowNotFound, ConfigError, BindError):
+            return "", ""
+        pos = str(workflow.get(roles.positive, {}).get("inputs", {}).get("text") or "")
+        neg = str(workflow.get(roles.negative, {}).get("inputs", {}).get("text") or "")
+        return pos, neg
+
     # ---------- 主流程 ----------
     async def generate(self, request: ImageRequest, on_submit=None) -> GenerationResult:
         started = time.monotonic()
@@ -246,10 +257,13 @@ class ImagePipeline:
         width = int(request.width or profile.width or 0)
         height = int(request.height or profile.height or 0)
 
-        # 专用链路选了模型时，把底模换成该模型工作流里的 checkpoint
+        # 专用链路选了模型时，底模和作者正负向词都换成该模型工作流里的
         ckpt_name = ""
+        author_pos = ""
+        author_neg = ""
         if entry is not None and kind != KIND_TEXT2IMG:
             ckpt_name = self.checkpoint_of(entry.workflow)
+            author_pos, author_neg = self.author_prompts(entry.workflow)
 
         values = BindValues(
             positive=bundle.positive,
@@ -265,6 +279,8 @@ class ImagePipeline:
             identity_image=identity_image,
             source_image=source_image,
             ckpt_name=ckpt_name,
+            author_positive=author_pos,
+            author_negative=author_neg,
         )
         prompt = apply_values(workflow, roles, values)
         result.seed = int(prompt[roles.sampler]["inputs"]["seed"])

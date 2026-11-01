@@ -127,6 +127,30 @@ class TestApplyValues(unittest.TestCase):
         prompt = apply_values(workflow, roles, BindValues(positive="p", denoise=0.6))
         self.assertEqual(prompt[roles.sampler]["inputs"]["denoise"], 0.6)
 
+    def test_author_prompt_replaces_workflow_text(self) -> None:
+        """换模型时用该模型的作者词整段替换，再追加本次词。"""
+        workflow = load(SELFIE)
+        roles = resolve_roles(workflow)
+        prompt = apply_values(
+            workflow,
+            roles,
+            BindValues(
+                positive="cowboy shot, standing",
+                author_positive="masterpiece, ultra detailed, pale_skin",
+            ),
+        )
+        text = prompt[roles.positive]["inputs"]["text"]
+        self.assertTrue(text.startswith("masterpiece, ultra detailed, pale_skin"))
+        self.assertIn("cowboy shot", text)
+        self.assertNotIn("very awa", text)
+
+    def test_author_prompt_untouched_without_override(self) -> None:
+        workflow = load(SELFIE)
+        roles = resolve_roles(workflow)
+        original = workflow[roles.positive]["inputs"]["text"]
+        prompt = apply_values(workflow, roles, BindValues(positive="cowboy shot"))
+        self.assertTrue(prompt[roles.positive]["inputs"]["text"].startswith(original))
+
     def test_checkpoint_override_on_special_workflow(self) -> None:
         """自拍/参考图这类专用工作流也要能按所选模型换底模。"""
         workflow = load(SELFIE)
