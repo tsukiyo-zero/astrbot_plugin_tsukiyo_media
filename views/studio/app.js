@@ -133,7 +133,10 @@ function syncModelHint() {
   const needsRef = kind === "reference" || kind === "edit";
   el("reference-row").hidden = !needsRef;
   if (!needsRef) el("ref-preview").hidden = true;
-  el("model-hint").textContent = kind === "text2img" || kind === "auto" ? "文生图按此模型出图" : "该链路用配置里的工作流";
+  el("model-hint").textContent =
+    kind === "text2img" || kind === "auto"
+      ? "文生图按此模型出图（换模型即换画风）"
+      : "结构用专用工作流，底模与参数按此模型";
 }
 
 async function loadStatus() {

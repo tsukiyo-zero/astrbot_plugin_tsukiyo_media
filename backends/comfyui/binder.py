@@ -183,6 +183,7 @@ class BindValues:
     sampler_override: dict[str, Any] = field(default_factory=dict)
     identity_image: str = ""
     source_image: str = ""
+    ckpt_name: str = ""
 
 
 _ALLOWED_SAMPLER_KEYS = ("steps", "cfg", "sampler_name", "scheduler")
@@ -262,6 +263,10 @@ def apply_values(
         nodes[roles.identity_ref].setdefault("inputs", {})["image"] = values.identity_image
     if roles.source_image and values.source_image:
         nodes[roles.source_image].setdefault("inputs", {})["image"] = values.source_image
+
+    # 底模：自拍/参考图/编辑的专用工作流固定结构，但允许按所选模型换 checkpoint
+    if roles.checkpoint and values.ckpt_name:
+        nodes[roles.checkpoint].setdefault("inputs", {})["ckpt_name"] = values.ckpt_name
 
     # 落盘前缀（只影响 ComfyUI 侧文件名）
     nodes[roles.save].setdefault("inputs", {})["filename_prefix"] = values.filename_prefix or "tsukiyo"

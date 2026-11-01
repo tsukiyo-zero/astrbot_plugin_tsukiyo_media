@@ -8,14 +8,14 @@ import asyncio
 import json
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
 from ..backends.comfyui.binder import BindValues, apply_values, resolve_roles
 from ..backends.comfyui.client import ComfyUIClient
 from .catalog import ModelCatalog
-from .errors import BackendError, ConfigError, RoutingError, WorkflowNotFound
+from .errors import BackendError, BindError, ConfigError, RoutingError, WorkflowNotFound
 from .imaging import compress_image_bytes
 
 HISTORY_LIMIT = 60
@@ -165,7 +165,31 @@ class ImagePipeline:
 
         if not profile.workflow:
             raise ConfigError(f"配置里缺少 {kind} 的工作流")
-        return kind, None, profile
+
+        # 自拍 / 参考图 / 编辑：工作流结构固定（带 IP-Adapter 或 img2img），
+        # 但底模与作者参数可以跟着所选模型走；没显式选模型就保持 profile 原样。
+        entry = None
+        model_key = str(request.model_key or "").strip()
+        if model_key:
+            entry = self.catalog.get(model_key)
+            params = entry.author_params or {}
+            profile = replace(
+                profile,
+                width=int(params.get("width") or profile.width or 0),
+                height=int(params.get("height") or profile.height or 0),
+            )
+        return kind, entry, profile
+
+    def checkpoint_of(self, workflow_name: str) -> str:
+        """读某个工作流用的底模文件名；读不到就返回空（保持专用工作流原样）。"""
+        try:
+            workflow = self.load_workflow(workflow_name)
+            roles = resolve_roles(workflow)
+        except (WorkflowNotFound, ConfigError, BindError):
+            return ""
+        if not roles.checkpoint:
+            return ""
+        return str(workflow.get(roles.checkpoint, {}).get("inputs", {}).get("ckpt_name") or "")
 
     # ---------- 主流程 ----------
     async def generate(self, request: ImageRequest, on_submit=None) -> GenerationResult:
@@ -222,6 +246,11 @@ class ImagePipeline:
         width = int(request.width or profile.width or 0)
         height = int(request.height or profile.height or 0)
 
+        # 专用链路选了模型时，把底模换成该模型工作流里的 checkpoint
+        ckpt_name = ""
+        if entry is not None and kind != KIND_TEXT2IMG:
+            ckpt_name = self.checkpoint_of(entry.workflow)
+
         values = BindValues(
             positive=bundle.positive,
             negative=bundle.negative,
@@ -235,6 +264,7 @@ class ImagePipeline:
             sampler_override=(entry.author_params if entry else {}),
             identity_image=identity_image,
             source_image=source_image,
+            ckpt_name=ckpt_name,
         )
         prompt = apply_values(workflow, roles, values)
         result.seed = int(prompt[roles.sampler]["inputs"]["seed"])
