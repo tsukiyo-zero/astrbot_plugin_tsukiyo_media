@@ -49,7 +49,7 @@ _GROUP_BLOCK_HINTS = ("nude", "naked", "topless", "裸", "脱光", "全裸")
     "tsukiyo_media",
     "Mio (tsukiyo-zero)",
     "低耦合生成插件：本地 ComfyUI / 在线 API，文生图·自拍·参考图·编辑，预留视频",
-    "0.5.1",
+    "0.5.2",
 )
 class TsukiyoMediaPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
@@ -171,16 +171,17 @@ class TsukiyoMediaPlugin(Star):
 
     # ------------------------------------------------------------------ 命令
     @filter.command("img")
+    @filter.command("画图")
     async def img_command(self, event: AstrMessageEvent):
         """本地 ComfyUI 生图：/img [selfie|edit|ref] [model=key] [size=832x1216] [seed=1] 描述"""
         raw = str(getattr(event, "message_str", "") or "")
-        body = re.sub(r"^\s*/?img\b", "", raw, flags=re.I).strip()
+        body = re.sub(r"^\s*/?(?:img|画图)\b", "", raw, flags=re.I).strip()
         head = body.split()[0].lower() if body.split() else ""
 
-        if head in {"", "help", "?", "？"}:
+        if head in {"", "help", "帮助", "说明", "?", "？"}:
             yield event.plain_result(self._help_text())
             return
-        if head in {"models", "模型"}:
+        if head in {"models", "模型", "列表", "list"}:
             yield event.plain_result(self._models_text())
             return
         if head in {"status", "状态"}:

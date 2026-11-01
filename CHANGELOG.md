@@ -2,6 +2,12 @@
 
 遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.5.2] - 2026-11-02
+
+### 新增
+- 命令中文别名：`/img 帮助`、`/img 模型`、`/img 状态`（原来只认英文 help/models/status）
+- 新增 `/画图` 命令，与 `/img` 等价（中文用户不用记英文命令）
+
 ## [0.5.1] - 2026-11-02
 
 ### 新增
