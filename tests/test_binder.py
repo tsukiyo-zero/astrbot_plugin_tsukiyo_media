@@ -127,6 +127,28 @@ class TestApplyValues(unittest.TestCase):
         prompt = apply_values(workflow, roles, BindValues(positive="p", denoise=0.6))
         self.assertEqual(prompt[roles.sampler]["inputs"]["denoise"], 0.6)
 
+    def test_checkpoint_override_on_special_workflow(self) -> None:
+        """自拍/参考图这类专用工作流也要能按所选模型换底模。"""
+        workflow = load(SELFIE)
+        roles = resolve_roles(workflow)
+        self.assertTrue(roles.checkpoint)
+        prompt = apply_values(
+            workflow,
+            roles,
+            BindValues(positive="p", ckpt_name="miaomiaoRealskin_epsV14.safetensors"),
+        )
+        self.assertEqual(
+            prompt[roles.checkpoint]["inputs"]["ckpt_name"],
+            "miaomiaoRealskin_epsV14.safetensors",
+        )
+
+    def test_checkpoint_untouched_without_override(self) -> None:
+        workflow = load(SELFIE)
+        roles = resolve_roles(workflow)
+        original = workflow[roles.checkpoint]["inputs"]["ckpt_name"]
+        prompt = apply_values(workflow, roles, BindValues(positive="p"))
+        self.assertEqual(prompt[roles.checkpoint]["inputs"]["ckpt_name"], original)
+
     def test_sampler_override_whitelist(self) -> None:
         workflow = load(DRAW)
         roles = resolve_roles(workflow)
