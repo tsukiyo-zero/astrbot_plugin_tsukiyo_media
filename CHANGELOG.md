@@ -9,6 +9,7 @@
 ### 修复
 - **设置页保存会把三档工作流写坏**：`applyConfig()` 先给 `<select>` 赋值、后填 `<option>`，值被丢弃后浏览器自动选中列表第一项（`draw-cat.json`），点保存就把「自拍 / 参考图 / 编辑」全写成纯文生图，参考图被静默忽略。改为**先填选项、再用配置值回填**；未配置时插入空选项「（未设置，用默认）」，不再把第一项当成用户选择
 - 「三档工作流」下拉的 change 事件同步写回 `state.config`，避免页面上改了但状态里还是旧值
+- **页面点「生成」报 `Failed to fetch`**：AstrBot 的插件页 iframe 是 `sandbox="allow-scripts allow-forms allow-downloads"`（**没有 `allow-same-origin`**），页面里直接 `fetch()` 属于跨域请求，被浏览器拦掉；只有走 `bridge` 由父页面同源代发才行。改为 `bridge.apiPost("generate", …)`，进度条退化为本地计时（拿不到 SSE 逐秒进度），`POST /generate` 响应补上 `positive` / `negative`，仍能看到实际提交的正负向词
 
 ## [0.6.4] - 2026-11-02
 
