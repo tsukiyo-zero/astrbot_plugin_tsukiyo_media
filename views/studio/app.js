@@ -1,6 +1,5 @@
 const bridge = window.AstrBotPluginView || window.AstrBotPluginPage;
 const el = (id) => document.getElementById(id);
-const API = "/api/v1/plugins/extensions/astrbot_plugin_tsukiyo_media";
 
 const state = {
   config: {},
@@ -227,15 +226,6 @@ function setProgress(visible, percent, text) {
   el("progress-text").textContent = text || "";
 }
 
-const STATE_TEXT = {
-  submitting: "提交中…",
-  queued: "排队中",
-  waiting: "等待后端…",
-  running: "生成中",
-  finishing: "收尾中…",
-  done: "完成",
-};
-
 async function generate() {
   if (state.busy) return;
   const prompt = el("prompt").value.trim();
@@ -266,49 +256,26 @@ async function generate() {
   };
 
   try {
-    const resp = await fetch(API + "/generate/stream", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!resp.ok || !resp.body) {
-      const text = await resp.text().catch(() => "");
-      throw new Error("HTTP " + resp.status + " " + text.slice(0, 120));
+    // 插件页 iframe 是 sandbox="allow-scripts allow-forms allow-downloads"（没有 allow-same-origin），
+    // 页面里的裸 fetch 属于跨域请求，会被浏览器直接拦成 “Failed to fetch”。
+    // 所以生成必须走 bridge，由父页面用同源凭证代发；代价是拿不到 SSE 的逐秒进度，
+    // 这里用本地计时器代替。
+    const startedAt = Date.now();
+    const ticker = setInterval(() => {
+      const seconds = ((Date.now() - startedAt) / 1000).toFixed(1);
+      setProgress(true, null, "生成中… " + seconds + "s（含排队）");
+    }, 500);
+    let final;
+    try {
+      final = await bridge.apiPost("generate", payload);
+    } finally {
+      clearInterval(ticker);
     }
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let final = null;
-    for (;;) {
-      const step = await reader.read();
-      if (step.done) break;
-      buffer += decoder.decode(step.value, { stream: true });
-      const chunks = buffer.split("\n\n");
-      buffer = chunks.pop() || "";
-      for (const chunk of chunks) {
-        const line = chunk.split("\n").find((item) => item.startsWith("data: "));
-        if (!line) continue;
-        let data;
-        try {
-          data = JSON.parse(line.slice(6));
-        } catch (err) {
-          continue;
-        }
-        if (data.state && STATE_TEXT[data.state]) {
-          const elapsed = data.elapsed || 0;
-          const percent = data.state === "running" ? Math.min(92, (elapsed / 25) * 100) : null;
-          const suffix = data.position ? " 第 " + data.position + " 位" : "";
-          setProgress(true, percent, STATE_TEXT[data.state] + suffix + " · " + elapsed.toFixed(1) + "s");
-        }
-        if (data.state === "done" || data.state === "failed") final = data;
-      }
-    }
-    if (!final) throw new Error("连接中断，未收到结果");
+    if (!final || typeof final !== "object") throw new Error("后端没有返回结果");
     showReceipt(final);
     if (final.ok && (final.images || []).length) {
       showImage(final.images[0]);
-      setStatus("完成，用时 " + (final.elapsed_total || "?") + "s", "ok");
+      setStatus("完成，用时 " + ((final.elapsed_ms || 0) / 1000).toFixed(1) + "s", "ok");
       loadHistory();
     } else {
       setStatus(final.error || "生成失败", "bad");

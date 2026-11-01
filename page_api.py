@@ -140,6 +140,9 @@ class PageAPI:
         result = await plugin.pipeline.generate(req)
         data = result.to_receipt()
         data["kind"] = result.kind
+        # 页面要显示“实际提交给 ComfyUI 的正负向词”，to_receipt 里没有这两项
+        data["positive"] = result.positive
+        data["negative"] = result.negative
         data["images"] = [self._image_info(path) for path in result.paths]
         return json_response(data)
 
