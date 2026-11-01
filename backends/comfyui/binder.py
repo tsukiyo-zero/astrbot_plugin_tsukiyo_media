@@ -184,6 +184,9 @@ class BindValues:
     identity_image: str = ""
     source_image: str = ""
     ckpt_name: str = ""
+    #: 换模型时用该作者词整段替换工作流自带的作者词（空 = 保留工作流原样）
+    author_positive: str = ""
+    author_negative: str = ""
 
 
 _ALLOWED_SAMPLER_KEYS = ("steps", "cfg", "sampler_name", "scheduler")
@@ -225,10 +228,14 @@ def apply_values(
 
     # 正向 / 负向
     pos_node = nodes[roles.positive]
+    if values.author_positive:
+        pos_node.setdefault("inputs", {})["text"] = values.author_positive
     pos_node.setdefault("inputs", {})["text"] = _merge_text(
         _inputs(pos_node).get("text"), values.positive, values.prompt_mode
     )
     neg_node = nodes[roles.negative]
+    if values.author_negative:
+        neg_node.setdefault("inputs", {})["text"] = values.author_negative
     neg_node.setdefault("inputs", {})["text"] = _merge_text(
         _inputs(neg_node).get("text"), values.negative, values.prompt_mode
     )

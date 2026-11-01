@@ -60,6 +60,15 @@ class BuildPlanTest(unittest.TestCase):
         )
         self.assertEqual(self.pipeline.checkpoint_of("no-such.json"), "")
 
+    def test_author_prompts_follow_model(self) -> None:
+        pos, neg = self.pipeline.author_prompts("draw-miao.json")
+        self.assertIn("pale_skin", pos)
+        self.assertIn("bad feet", neg)
+        # 专用工作流的作者词与所选模型不同，正好用来区分
+        selfie_pos, _ = self.pipeline.author_prompts("selfie-ref.json")
+        self.assertNotEqual(pos, selfie_pos)
+        self.assertEqual(self.pipeline.author_prompts("no-such.json"), ("", ""))
+
 
 if __name__ == "__main__":
     unittest.main()
