@@ -1,4 +1,4 @@
 """月夜绘影 tsukiyo_media（AstrBot 生成插件）。"""
 from __future__ import annotations
 
-__version__ = "0.5.2"
+__version__ = "0.5.3"

@@ -49,7 +49,7 @@ _GROUP_BLOCK_HINTS = ("nude", "naked", "topless", "裸", "脱光", "全裸")
     "tsukiyo_media",
     "Mio (tsukiyo-zero)",
     "低耦合生成插件：本地 ComfyUI / 在线 API，文生图·自拍·参考图·编辑，预留视频",
-    "0.5.2",
+    "0.5.3",
 )
 class TsukiyoMediaPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
@@ -172,10 +172,13 @@ class TsukiyoMediaPlugin(Star):
     # ------------------------------------------------------------------ 命令
     @filter.command("img")
     @filter.command("画图")
+    @filter.command("draw")
     async def img_command(self, event: AstrMessageEvent):
         """本地 ComfyUI 生图：/img [selfie|edit|ref] [model=key] [size=832x1216] [seed=1] 描述"""
         raw = str(getattr(event, "message_str", "") or "")
-        body = re.sub(r"^\s*/?(?:img|画图)\b", "", raw, flags=re.I).strip()
+        # /draw 是旧插件的命令，这里做兼容：/draw <模型key> <描述>
+        invoked_draw = bool(re.match(r"^\s*/?draw\b", raw, flags=re.I))
+        body = re.sub(r"^\s*/?(?:img|画图|draw)\b", "", raw, flags=re.I).strip()
         head = body.split()[0].lower() if body.split() else ""
 
         if head in {"", "help", "帮助", "说明", "?", "？"}:
@@ -213,6 +216,15 @@ class TsukiyoMediaPlugin(Star):
             body = body[len(body.split()[0]):].strip()
 
         prompt, opts = self._parse_options(body)
+        if invoked_draw and not opts.get("model"):
+            # 旧插件的写法：/draw miao 海边 —— 首词若是模型 key/别名，当成选模
+            tokens = prompt.split()
+            if len(tokens) >= 2 and self.catalog is not None:
+                try:
+                    opts["model"] = self.catalog.get(tokens[0]).key
+                    prompt = prompt[len(tokens[0]):].strip()
+                except Exception:  # noqa: BLE001 - 不是模型名就当普通描述
+                    pass
         if not prompt:
             yield event.plain_result("请描述画面内容，例如：/img selfie 在海边散步，黄昏逆光")
             return
@@ -359,7 +371,7 @@ class TsukiyoMediaPlugin(Star):
     # ------------------------------------------------------------------ 工具方法
     def _help_text(self) -> str:
         return (
-            "本地 ComfyUI 生图\n"
+            "本地 ComfyUI 生图（/img、/画图、/draw 三种写法等价）\n"
             "/img models — 列出模型\n"
             "/img status — ComfyUI 状态\n"
             "/img last — 上一张的参数\n"
@@ -368,7 +380,8 @@ class TsukiyoMediaPlugin(Star):
             "/img edit <描述> — 改图（需要带图）\n"
             "/img ref <描述> — 参考图画新图（需要带图）\n"
             "可选参数：model=<key> size=832x1216 seed=123 kind=selfie\n"
-            "例：/img model=miao 海边散步，黄昏逆光，全身"
+            "例：/img model=miao 海边散步，黄昏逆光，全身\n"
+            "旧写法也支持：/draw miao 海边散步"
         )
 
     def _models_text(self) -> str:
