@@ -25,6 +25,7 @@ from .backends.comfyui.client import ComfyUIClient
 from .core.catalog import ModelCatalog
 from .core.errors import TsukiyoMediaError
 from .core.pipeline import ImagePipeline, KindProfile, PipelineSettings
+from .page_api import PageAPI
 from .core.types import (
     KIND_EDIT,
     KIND_REFERENCE,
@@ -47,7 +48,7 @@ _GROUP_BLOCK_HINTS = ("nude", "naked", "topless", "裸", "脱光", "全裸")
     "tsukiyo_media",
     "Mio (tsukiyo-zero)",
     "低耦合生成插件：本地 ComfyUI / 在线 API，文生图·自拍·参考图·编辑，预留视频",
-    "0.1.0",
+    "0.2.0",
 )
 class TsukiyoMediaPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
@@ -64,6 +65,13 @@ class TsukiyoMediaPlugin(Star):
         self.pipeline: ImagePipeline | None = None
         self.api: TsukiyoMediaAPI | None = None
         self._init_runtime()
+
+        # 插件可视化视图的后端 API：只在启动时注册一次（/img reload 不重复注册）
+        self.page_api = PageAPI(self)
+        try:
+            self.page_api.register(context)
+        except Exception as exc:  # pragma: no cover - 老版本或权限问题不影响主功能
+            logger.warning("[TsukiyoMedia] 插件页面注册失败：%s", exc)
 
     # ------------------------------------------------------------------ 装配
     def _init_runtime(self) -> None:

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>月夜工坊</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="dot"></span>
+        <h1>月夜工坊</h1>
+        <span class="sub">tsukiyo_media</span>
+      </div>
+      <div class="status" id="backend-status">
+        <span class="chip" id="chip-backend">连接中…</span>
+        <button class="ghost" id="btn-refresh" title="刷新状态">刷新</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel form-panel">
+        <div class="row">
+          <label>链路</label>
+          <select id="kind">
+            <option value="auto">自动判断</option>
+            <option value="text2img">文生图</option>
+            <option value="selfie">自拍（人设参考图）</option>
+            <option value="reference">参考图生图</option>
+            <option value="edit">编辑 / 改图</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label>模型</label>
+          <select id="model"></select>
+          <span class="hint" id="model-hint">仅文生图生效</span>
+        </div>
+
+        <div class="row column">
+          <label>画面描述（英文 tag 效果最好）</label>
+          <textarea id="prompt" rows="6" placeholder="1girl, beach, sunset, walking, smiling"></textarea>
+        </div>
+
+        <details class="advanced">
+          <summary>高级参数</summary>
+          <div class="row">
+            <label>尺寸</label>
+            <input id="width" type="number" min="0" step="64" placeholder="工作流默认" />
+            <span class="times">×</span>
+            <input id="height" type="number" min="0" step="64" placeholder="工作流默认" />
+          </div>
+          <div class="row">
+            <label>种子</label>
+            <input id="seed" type="number" value="-1" />
+            <span class="hint">-1 = 随机</span>
+          </div>
+          <div class="row column">
+            <label>额外负向词</label>
+            <textarea id="negative" rows="2" placeholder="lowres, bad anatomy"></textarea>
+          </div>
+        </details>
+
+        <div class="actions">
+          <button id="btn-generate" class="primary">生成</button>
+          <span class="hint" id="gen-hint"></span>
+        </div>
+      </section>
+
+      <section class="panel result-panel">
+        <div class="result-head">
+          <h2>结果</h2>
+          <span class="meta" id="result-meta"></span>
+        </div>
+        <div class="preview" id="preview">
+          <div class="empty">还没有生成</div>
+        </div>
+        <details class="prompt-detail" id="prompt-detail" hidden>
+          <summary>实际提交的提示词</summary>
+          <pre id="prompt-final"></pre>
+        </details>
+      </section>
+    </main>
+
+    <section class="history">
+      <div class="history-head">
+        <h2>最近生成</h2>
+        <button class="ghost" id="btn-history">刷新</button>
+      </div>
+      <div class="grid" id="history-grid"></div>
+    </section>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

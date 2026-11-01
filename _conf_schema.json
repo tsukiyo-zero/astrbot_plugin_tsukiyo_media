@@ -121,9 +121,9 @@
       },
       "identity_prompt": {
         "type": "text",
-        "description": "固定人设特征词",
-        "hint": "只在自拍档追加；如果你的自拍工作流里已经写死了人物特征，这里留空即可",
-        "default": ""
+        "description": "固定人设特征词（自拍档专用）",
+        "hint": "默认是一个示例角色（蓝发鲸鱼娘），换成你自己角色的特征即可；留空则不加任何固定特征",
+        "default": "1girl, solo, adult, mature female, blue hair, long hair, gradient hair, blue eyes, fish fin ears on the sides of the head, translucent blue fins, whale tail with deep blue star pattern, ahoge"
       },
       "fixed_prompt": {
         "type": "text",

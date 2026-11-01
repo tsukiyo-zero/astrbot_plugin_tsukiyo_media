@@ -45,6 +45,19 @@ git clone https://github.com/tsukiyo-zero/astrbot_plugin_tsukiyo_media.git
 /img size=832x1216 seed=123 ...   覆盖尺寸 / 种子
 ```
 
+## 可视化页面（Studio）
+
+启用插件后，AstrBot WebUI → **插件** → **月夜工坊** → 打开 `Studio` 视图，可以做：
+
+- 看后端状态：ComfyUI 版本、显存占用、队列长度（离线时直接显示原因）
+- 选链路（自动 / 文生图 / 自拍 / 参考图 / 编辑）与模型
+- 填提示词、尺寸、种子、额外负向词，一键生成并预览
+- 展开看**实际提交给 ComfyUI 的完整正负向词**（排查问题不用翻日志）
+- 最近 12 张缩略图，点开可查看/下载
+
+页面由 `views/studio/` 提供，后端接口在 `page_api.py`；路由前缀固定为 `/<插件名>`，
+前端通过 `window.AstrBotPluginView` 的 `apiGet` / `apiPost` 调用，不需要改 AstrBot 前端。
+
 ## LLM 工具
 
 插件向 AstrBot 注册函数工具 `tsukiyo_image_generate`，聊天模型可自行调用：
@@ -145,6 +158,8 @@ python scripts/smoke.py --kind selfie --reference ./ref.png --prompt "sitting on
 
 ```
 main.py / api.py            AstrBot 入口与对外 API（TsukiyoMediaAPI）
+page_api.py                 可视化页面的后端 API（status / generate / history / file）
+views/studio/               WebUI 里的 Studio 页面（index.html + app.js + style.css）
 core/                       纯逻辑：types / catalog / router / prompt / pipeline
 backends/base.py            后端契约：MediaBackend / RenderPlan / Asset（多后端扩展点）
 backends/comfyui/           client（HTTP）+ binder（节点绑定）
@@ -160,9 +175,10 @@ tests/                      不依赖网络的单元测试
 
 | 阶段 | 后端 | 说明 |
 |---|---|---|
-| v0.1（当前） | ComfyUI | 手动配置 `comfyui.base_url`，走本地 HTTP |
-| v0.2 | 在线图片 API | 新增 `backends/openai_image/`，与 ComfyUI 实现同一个 `MediaBackend` 契约 |
-| v0.3 | 视频 | 增加 `modality=video`，`Asset` 已预留视频元数据字段 |
+| v0.1 | ComfyUI | 手动配置 `comfyui.base_url`，走本地 HTTP |
+| v0.2（当前） | ComfyUI + 可视化页面 | Studio 页面可看状态、选模型、生成、看历史 |
+| v0.3 | 在线图片 API | 新增 `backends/openai_image/`，实现同一个 `MediaBackend` 契约 |
+| v0.4 | 视频 | 增加 `modality=video`，`Asset` 已预留视频元数据字段 |
 
 `backends/base.py` 里的 `MediaBackend` 就是那条缝：实现 `health / render / close` 三件套即可接入，
 流水线、命令、提示词层都不用改。详见 `docs/architecture.md`。
@@ -170,12 +186,13 @@ tests/                      不依赖网络的单元测试
 ## Roadmap
 
 - [x] v0.1 文生图 / 自拍 / 参考图 / 编辑 / 自动与手动选模（ComfyUI 后端）
-- [ ] v0.2 抽出 `MediaBackend` 并落地在线 API 后端（`backends/openai_image`）
-- [ ] v0.2 生成历史持久化（重启后 `/img last` 仍可用）
-- [ ] v0.3 视频生成（`modality=video`）
-- [ ] v0.3 LLM 辅助选模（`routing.mode=llm`，规则兜底）
-- [ ] v0.4 任务队列与取消、并发上限可视化
-- [ ] v0.5 hires 二次细化、局部重绘（SAM）
+- [x] v0.2 可视化页面（状态 / 选模 / 生成 / 历史）；工作流去人设化
+- [ ] v0.3 抽出 `MediaBackend` 并落地在线 API 后端（`backends/openai_image`）
+- [ ] v0.3 生成历史持久化（重启后 `/img last` 与 Studio 历史仍可用）
+- [ ] v0.4 视频生成（`modality=video`）
+- [ ] v0.4 LLM 辅助选模（`routing.mode=llm`，规则兜底）
+- [ ] v0.5 任务队列与取消、并发上限可视化
+- [ ] v0.6 hires 二次细化、局部重绘（SAM）
 
 ## License
 

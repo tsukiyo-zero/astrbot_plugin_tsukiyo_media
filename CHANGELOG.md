@@ -2,6 +2,18 @@
 
 遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.2.0] - 2026-11-02
+
+### 新增
+- **可视化页面** `views/studio`：后端状态（版本/显存/队列）、模型下拉、链路选择、提示词与高级参数、生成并预览、最近生成缩略图、实际提交提示词展开
+  - 后端 API：`GET /status`、`POST /generate`、`GET /history`、`GET /file`（仅允许读输出目录）
+  - 通过 `window.AstrBotPluginView` bridge 调用，无需 Dashboard 改前端
+- 自拍档 `identity_prompt` 默认值填了一个**示例角色**（蓝发鲸鱼娘），改成自己角色即可
+
+### 变更
+- `workflows/selfie-ref.json` **去人设化**：只保留作者质量词，人物特征移到配置（`selfie.identity_prompt`），仓库可作为通用模板
+- 工作流文件改中性名：`selfie-ref.json` / `reference-ref.json` / `edit-img2img.json`
+
 ## [0.1.0] - 2026-11-02
 
 首个可运行版本（仓库名 `astrbot_plugin_tsukiyo_media`，显示名「月夜工坊」，作者 Mio / tsukiyo-zero）。
