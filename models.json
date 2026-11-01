@@ -4,9 +4,18 @@
   "models": {
     "obsession": {
       "label": "obsession 华丽",
+      "group": "anime",
+      "desc": "通用泛用，细节多",
       "workflow": "draw-obsession.json",
-      "aliases": ["华丽", "obsession"],
-      "tags": ["anime", "华丽", "通用"],
+      "aliases": [
+        "华丽",
+        "obsession"
+      ],
+      "tags": [
+        "anime",
+        "华丽",
+        "通用"
+      ],
       "author_params": {
         "steps": 30,
         "cfg": 4.5,
@@ -18,9 +27,19 @@
     },
     "miao": {
       "label": "miao 柔光",
+      "group": "real",
+      "desc": "肤感极佳，适合人像",
       "workflow": "draw-miao.json",
-      "aliases": ["柔光", "miao", "写实柔光"],
-      "tags": ["写实", "柔光", "肤感"],
+      "aliases": [
+        "柔光",
+        "miao",
+        "写实柔光"
+      ],
+      "tags": [
+        "写实",
+        "柔光",
+        "肤感"
+      ],
       "author_params": {
         "steps": 30,
         "cfg": 4.5,
@@ -32,9 +51,17 @@
     },
     "cat": {
       "label": "cat 清漫",
+      "group": "anime",
+      "desc": "干净清爽",
       "workflow": "draw-cat.json",
-      "aliases": ["清漫", "cat"],
-      "tags": ["动漫", "干净"],
+      "aliases": [
+        "清漫",
+        "cat"
+      ],
+      "tags": [
+        "动漫",
+        "干净"
+      ],
       "author_params": {
         "steps": 30,
         "cfg": 6.0,
@@ -46,9 +73,18 @@
     },
     "fabricated": {
       "label": "fabricated 赛璐璐",
+      "group": "anime",
+      "desc": "经典动画风",
       "workflow": "draw-fabricated.json",
-      "aliases": ["赛璐璐", "cel", "fabricated"],
-      "tags": ["动漫", "赛璐璐"],
+      "aliases": [
+        "赛璐璐",
+        "cel",
+        "fabricated"
+      ],
+      "tags": [
+        "动漫",
+        "赛璐璐"
+      ],
       "author_params": {
         "steps": 28,
         "cfg": 5.5,
@@ -60,9 +96,17 @@
     },
     "illustrious": {
       "label": "illustrious 基础",
+      "group": "anime",
+      "desc": "稳定不出错",
       "workflow": "draw-illustrious.json",
-      "aliases": ["基础", "illustrious"],
-      "tags": ["动漫", "基础模型"],
+      "aliases": [
+        "基础",
+        "illustrious"
+      ],
+      "tags": [
+        "动漫",
+        "基础模型"
+      ],
       "author_params": {
         "steps": 28,
         "cfg": 7.5,
@@ -74,9 +118,18 @@
     },
     "lemon": {
       "label": "lemon 甜彩",
+      "group": "anime",
+      "desc": "明亮甜系",
       "workflow": "draw-lemon.json",
-      "aliases": ["甜彩", "lemon"],
-      "tags": ["动漫", "明亮", "甜"],
+      "aliases": [
+        "甜彩",
+        "lemon"
+      ],
+      "tags": [
+        "动漫",
+        "明亮",
+        "甜"
+      ],
       "author_params": {
         "steps": 25,
         "cfg": 5.5,
@@ -88,9 +141,19 @@
     },
     "novaflat": {
       "label": "novaflat 通透",
+      "group": "anime",
+      "desc": "平涂质感",
       "workflow": "draw-novaflat.json",
-      "aliases": ["通透", "nova", "novaflat"],
-      "tags": ["动漫", "通透", "平涂"],
+      "aliases": [
+        "通透",
+        "nova",
+        "novaflat"
+      ],
+      "tags": [
+        "动漫",
+        "通透",
+        "平涂"
+      ],
       "author_params": {
         "steps": 28,
         "cfg": 5.0,
@@ -102,9 +165,16 @@
     },
     "pixel": {
       "label": "pixel 像素",
+      "group": "anime",
+      "desc": "复古像素风",
       "workflow": "draw-pixel.json",
-      "aliases": ["像素", "pixel"],
-      "tags": ["像素风"],
+      "aliases": [
+        "像素",
+        "pixel"
+      ],
+      "tags": [
+        "像素风"
+      ],
       "author_params": {
         "steps": 30,
         "cfg": 6.0,
@@ -116,9 +186,18 @@
     },
     "xxmix": {
       "label": "xxmix 写实",
+      "group": "real",
+      "desc": "标准真人摄影风",
       "workflow": "draw-xxmix.json",
-      "aliases": ["写实", "realistic", "xxmix"],
-      "tags": ["写实", "人像"],
+      "aliases": [
+        "写实",
+        "realistic",
+        "xxmix"
+      ],
+      "tags": [
+        "写实",
+        "人像"
+      ],
       "author_params": {
         "steps": 30,
         "cfg": 8.0,

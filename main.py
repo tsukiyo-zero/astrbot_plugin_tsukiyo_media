@@ -49,7 +49,7 @@ _GROUP_BLOCK_HINTS = ("nude", "naked", "topless", "裸", "脱光", "全裸")
     "tsukiyo_media",
     "Mio (tsukiyo-zero)",
     "低耦合生成插件：本地 ComfyUI / 在线 API，文生图·自拍·参考图·编辑，预留视频",
-    "0.6.2",
+    "0.6.3",
 )
 class TsukiyoMediaPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
@@ -406,7 +406,7 @@ class TsukiyoMediaPlugin(Star):
     def _models_text(self) -> str:
         if not self.catalog:
             return "模型目录未加载。"
-        return "默认模型用 * 标记：\n" + self.catalog.describe()
+        return self.catalog.gallery()
 
     def _blocked_reason(self, event: AstrMessageEvent, prompt: str) -> str:
         delivery = self.config.get("delivery") or {}

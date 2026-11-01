@@ -22,6 +22,8 @@ class ModelEntry:
     tags: tuple[str, ...] = ()
     allow_override: bool = False
     enabled: bool = True
+    group: str = ""
+    desc: str = ""
 
     def matches(self, text: str) -> bool:
         needle = str(text or "").strip().casefold()
@@ -66,6 +68,8 @@ class ModelCatalog:
                 tags=tuple(str(t) for t in (item.get("tags") or ())),
                 allow_override=bool(item.get("allow_override", False)),
                 enabled=bool(item.get("enabled", True)),
+                group=str(item.get("group") or ""),
+                desc=str(item.get("desc") or ""),
             )
         if not models:
             raise ConfigError("模型目录为空")
@@ -132,6 +136,79 @@ class ModelCatalog:
         except RoutingError:
             return None
 
+    def gallery(self) -> str:
+        """聊天里展示的"模型图鉴"：按分组排版，一眼能选。"""
+        groups: dict[str, list[ModelEntry]] = {}
+        for entry in self._models.values():
+            group = entry.group or (
+                "real" if any(tag in ("写实", "人像", "摄影") for tag in entry.tags) else "anime"
+            )
+            groups.setdefault(group, []).append(entry)
+
+        titles = {"anime": "🎀 动漫系", "real": "📷 写实系", "other": "📦 其他"}
+        order = ["anime", "real", "other"]
+
+        lines = ["✨ 月夜绘影 | 模型图鉴 ✨", ""]
+        default = self._models.get(self._default)
+        if default is not None:
+            style = self._style_of(default)
+            style_tags = [tag for tag in default.tags if tag != style]
+            applies = "、".join(style_tags[:2]) or "通用"
+            lines.append(f"⭐ [默认] {default.key}")
+            lines.append(f"├ 风格：{style} | 适用：{applies}")
+            lines.append("")
+
+        for group in order + [g for g in groups if g not in order]:
+            entries = groups.get(group) or []
+            if not entries:
+                continue
+            lines.append(titles.get(group, group))
+            for index, entry in enumerate(entries):
+                branch = "└" if index == len(entries) - 1 else "├"
+                label = self._style_of(entry)
+                note = entry.desc or "、".join(entry.tags)
+                off = "（已停用）" if not entry.enabled else ""
+                lines.append(f"{branch} {label} ({entry.key}) ─ {note}{off}")
+            lines.append("")
+
+        lines.append("💬 怎么用？")
+        lines.append("直接发：/draw " + self._example_alias() + " 海边散步")
+        lines.append("指定参数：/img model=" + self._example_key() + " 一只猫")
+        alias_samples = [a for entry in self._models.values() for a in entry.aliases if a and not a.isascii()]
+        if alias_samples:
+            lines.append("（模型名支持中文别名，如 " + "、".join(dict.fromkeys(alias_samples[:3])) + "）")
+        return "\n".join(lines)
+
+    @staticmethod
+    def _style_of(entry: ModelEntry) -> str:
+        """label 里通常写成 "obsession 华丽"，展示时只留中文风格名。"""
+        label = entry.label.strip()
+        if label.casefold().startswith(entry.key.casefold()):
+            label = label[len(entry.key):].strip(" -·_")
+        return label or entry.key
+
+    def _example_alias(self) -> str:
+        """示例优先用"柔光"这类好记的中文别名，其次非默认模型的中文别名。"""
+        preferred = self._models.get("miao")
+        if preferred is not None:
+            for alias in preferred.aliases:
+                if alias and not alias.isascii():
+                    return alias
+        for entry in self._models.values():
+            if entry.key == self._default:
+                continue
+            for alias in entry.aliases:
+                if alias and not alias.isascii():
+                    return alias
+        return self._default or "miao"
+
+    def _example_key(self) -> str:
+        """示例 key 用非默认模型，避免看起来"只能用默认的"。"""
+        for entry in self._models.values():
+            if entry.key != self._default:
+                return entry.key
+        return self._default or "miao"
+
     def describe(self) -> str:
         """给聊天看的模型列表：一列一个模型，只保留 key / 名称 / 标签。"""
         rows = []
@@ -139,10 +216,7 @@ class ModelCatalog:
             star = "★" if entry.key == self._default else " "
             tags = "、".join(entry.tags)
             off = "（已停用）" if not entry.enabled else ""
-            label = entry.label
-            if label.casefold().startswith(entry.key.casefold()):
-                label = label[len(entry.key):].strip(" -·_")
-            rows.append((star, entry.key, label or entry.label, tags + off))
+            rows.append((star, entry.key, self._style_of(entry), tags + off))
         if not rows:
             return "没有可用模型。"
 
