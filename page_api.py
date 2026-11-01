@@ -515,9 +515,15 @@ class PageAPI:
 
         nodes = {nid: node for nid, node in workflow.items() if isinstance(node, dict)}
         sampler = (nodes.get(roles.sampler) or {}).get("inputs") or {}
+        checkpoint = ""
+        if roles.checkpoint:
+            checkpoint = str(
+                ((nodes.get(roles.checkpoint) or {}).get("inputs") or {}).get("ckpt_name") or ""
+            )
         data: dict[str, Any] = {
             "ok": True,
             "name": name,
+            "checkpoint": checkpoint,
             "steps": sampler.get("steps"),
             "cfg": sampler.get("cfg"),
             "sampler_name": sampler.get("sampler_name"),

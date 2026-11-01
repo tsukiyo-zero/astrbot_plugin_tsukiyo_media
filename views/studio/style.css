@@ -387,3 +387,15 @@ table.models td input[placeholder="比如：obsession 华丽 · 30 步 CFG 4.5"]
 
 .sampler-help { margin: 6px 0 0; padding-left: 18px; line-height: 1.9; }
 .sampler-help li { margin-bottom: 2px; }
+
+.wf-summary {
+  margin: 2px 0 10px;
+  padding: 7px 9px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.6;
+  word-break: break-word;
+}

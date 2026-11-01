@@ -642,12 +642,19 @@ async function autofillFromWorkflow(kind, name) {
     setVal("ipadapter_weight", data.ipadapter_weight);
     if (kind === "edit") setVal("denoise", data.denoise);
     if (hint) {
-      const size = data.width && data.height ? data.width + "×" + data.height : "沿用源图";
-      hint.textContent =
-        "已按工作流填入： " + (data.steps ?? "-") + " 步 / CFG " + (data.cfg ?? "-") + " / " +
-        (data.sampler_name ?? "-") + " / " + size +
-        (data.ipadapter_weight !== null && data.ipadapter_weight !== undefined ? " / IPA " + data.ipadapter_weight : "") +
-        "（保存后生效）";
+      const size = data.width && data.height ? data.width + "×" + data.height : "沿用源图尺寸";
+      const parts = [
+        "底模 " + (data.checkpoint || "?"),
+        (data.steps ?? "-") + " 步",
+        "CFG " + (data.cfg ?? "-"),
+        (data.sampler_name || "-") + " / " + (data.scheduler || "-"),
+        size,
+        data.ipadapter_weight !== null && data.ipadapter_weight !== undefined
+          ? "IPA " + data.ipadapter_weight
+          : "无 IP-Adapter",
+        data.mode === "img2img" ? "图生图" : "文生图",
+      ];
+      hint.textContent = "@ " + name + " → " + parts.join(" · ") + "（填入后保存生效；这些参数由工作流本身决定）";
     }
   } catch (err) {
     if (hint) hint.textContent = "读取工作流参数失败：" + (err.message || err);

@@ -133,11 +133,25 @@ class ModelCatalog:
             return None
 
     def describe(self) -> str:
-        lines = []
+        """给聊天看的模型列表：一列一个模型，只保留 key / 名称 / 标签。"""
+        rows = []
         for entry in self._models.values():
-            alias = f" / {', '.join(entry.aliases)}" if entry.aliases else ""
-            tag = f"［{', '.join(entry.tags)}］" if entry.tags else ""
-            star = "*" if entry.key == self._default else " "
-            off = "（停用）" if not entry.enabled else ""
-            lines.append(f"{star} {entry.key}{alias} — {entry.label}{tag}{off}")
+            star = "★" if entry.key == self._default else " "
+            tags = "、".join(entry.tags)
+            off = "（已停用）" if not entry.enabled else ""
+            label = entry.label
+            if label.casefold().startswith(entry.key.casefold()):
+                label = label[len(entry.key):].strip(" -·_")
+            rows.append((star, entry.key, label or entry.label, tags + off))
+        if not rows:
+            return "没有可用模型。"
+
+        key_width = max(len(row[1]) for row in rows)
+        label_width = max(len(row[2]) for row in rows)
+        lines = ["默认模型带 ★", ""]
+        for star, key, label, tail in rows:
+            lines.append(f"{star} {key.ljust(key_width)}  {label.ljust(label_width)}  {tail}".rstrip())
+        lines.append("")
+        lines.append("用法：/img model=<key> 描述   ·   /draw <key> 描述")
+        lines.append("别名也认：/img model=柔光 海边散步")
         return "\n".join(lines)

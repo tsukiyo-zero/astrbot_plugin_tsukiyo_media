@@ -169,7 +169,7 @@
             <label>人设特征词<textarea rows="3" data-cfg="selfie.identity_prompt"></textarea></label>
             <label>固定构图词<input data-cfg="selfie.fixed_prompt" /></label>
             <label>人设参考图<input data-cfg="selfie.reference_image" /></label>
-            <span class="hint" data-inspect-hint="selfie"></span>
+            <div class="wf-summary" data-inspect-hint="selfie">切换工作流后这里显示它自带的参数</div>
             <div class="grid3">
               <label>IPA<input type="number" step="0.05" data-cfg="selfie.ipadapter_weight" /></label>
               <label>宽<input type="number" step="64" data-cfg="selfie.width" /></label>
@@ -180,7 +180,7 @@
             <legend>参考图</legend>
             <label>工作流<select data-cfg="reference.workflow" data-wf></select></label>
             <label>固定追加词<input data-cfg="reference.fixed_prompt" /></label>
-            <span class="hint" data-inspect-hint="reference"></span>
+            <div class="wf-summary" data-inspect-hint="reference">切换工作流后这里显示它自带的参数</div>
             <div class="grid3">
               <label>IPA<input type="number" step="0.05" data-cfg="reference.ipadapter_weight" /></label>
               <label>宽<input type="number" step="64" data-cfg="reference.width" /></label>
@@ -191,7 +191,7 @@
             <legend>编辑</legend>
             <label>工作流<select data-cfg="edit.workflow" data-wf></select></label>
             <label>固定追加词<input data-cfg="edit.fixed_prompt" /></label>
-            <span class="hint" data-inspect-hint="edit"></span>
+            <div class="wf-summary" data-inspect-hint="edit">切换工作流后这里显示它自带的参数</div>
             <div class="grid3">
               <label>重绘<input type="number" step="0.05" data-cfg="edit.denoise" /></label>
               <label>宽<input type="number" step="64" data-cfg="edit.width" /></label>
