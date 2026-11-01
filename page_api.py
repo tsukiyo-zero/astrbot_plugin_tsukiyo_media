@@ -38,6 +38,15 @@ except Exception:  # pragma: no cover - 老版本降级
     request = None  # type: ignore[assignment]
 
 
+def _as_list(value: Any) -> list[str]:
+    """接受数组或逗号分隔字符串，统一成去空的字符串数组。"""
+    if isinstance(value, (list, tuple)):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, str):
+        return [item.strip() for item in value.replace("，", ",").split(",") if item.strip()]
+    return []
+
+
 class PageAPI:
     """把插件能力暴露成 Web API。持有 plugin 引用，不复制状态。"""
 
@@ -63,6 +72,8 @@ class PageAPI:
             ("/settings", self.save_settings, ["POST"], "保存设置"),
             ("/models", self.save_models, ["POST"], "保存模型开关/默认/工作流"),
             ("/workflows", self.workflows, ["GET"], "工作流文件列表"),
+            ("/workflows/notes", self.save_workflow_notes, ["POST"], "保存工作流说明"),
+            ("/workflows/upload", self.upload_workflow, ["POST"], "上传工作流 JSON"),
             ("/test", self.test_backend, ["POST"], "测试后端连接"),
         )
         for path, handler, methods, desc in routes:
@@ -223,6 +234,11 @@ class PageAPI:
         return json_response(self._settings_payload())
 
     async def save_models(self):
+        """整表保存：支持新增（upsert）、删除、改字段、切默认。
+
+        payload = {"models": {key: {...}}, "delete": ["key"], "default": "key"}
+        模型字段：label / workflow / enabled / aliases / tags / author_params
+        """
         payload = await request.json(default={})
         if not isinstance(payload, dict):
             return error_response("payload 必须是对象", status_code=400)
@@ -232,22 +248,60 @@ class PageAPI:
         except Exception as exc:  # noqa: BLE001
             return error_response(f"读取 models.json 失败：{exc}", status_code=500)
         models = raw.get("models") or {}
+
+        removed = payload.get("delete") or []
+        if isinstance(removed, list):
+            for key in removed:
+                models.pop(str(key), None)
+
         patch = payload.get("models") or {}
         if isinstance(patch, dict):
             for key, item in patch.items():
-                if key not in models or not isinstance(item, dict):
+                key = str(key or "").strip()
+                if not key or not isinstance(item, dict):
                     continue
+                existing = models.get(key)
+                entry = dict(existing) if isinstance(existing, dict) else {}
+                if "label" in item:
+                    entry["label"] = str(item.get("label") or key)
+                workflow = str(item.get("workflow") or "").strip()
+                if workflow:
+                    entry["workflow"] = workflow
+                elif not entry.get("workflow"):
+                    return error_response(f"模型 {key} 缺少 workflow", status_code=400)
                 if "enabled" in item:
-                    models[key]["enabled"] = bool(item["enabled"])
-                if "workflow" in item:
-                    workflow = str(item["workflow"] or "").strip()
-                    if workflow:
-                        models[key]["workflow"] = workflow
+                    entry["enabled"] = bool(item["enabled"])
+                if "aliases" in item:
+                    entry["aliases"] = _as_list(item.get("aliases"))
+                if "tags" in item:
+                    entry["tags"] = _as_list(item.get("tags"))
+                params = item.get("author_params")
+                if isinstance(params, dict):
+                    cleaned = {}
+                    for field in ("steps", "cfg", "width", "height"):
+                        if params.get(field) not in (None, ""):
+                            try:
+                                cleaned[field] = int(float(params[field])) if field != "cfg" else float(params[field])
+                            except (TypeError, ValueError):
+                                continue
+                    for field in ("sampler_name", "scheduler"):
+                        if params.get(field):
+                            cleaned[field] = str(params[field]).strip()
+                    if cleaned:
+                        entry["author_params"] = {**(entry.get("author_params") or {}), **cleaned}
+                models[key] = entry
+
+        if not models:
+            return error_response("至少保留一个模型", status_code=400)
+
         default = str(payload.get("default") or "").strip()
         if default:
             if default not in models:
                 return error_response(f"未知模型：{default}", status_code=400)
             raw["default"] = default
+        elif raw.get("default") not in models:
+            raw["default"] = next(iter(models))
+
         raw["models"] = models
         try:
             tmp = catalog_path.with_suffix(".json.tmp")
@@ -257,6 +311,58 @@ class PageAPI:
         except Exception as exc:  # noqa: BLE001
             return error_response(f"写入 models.json 失败：{exc}", status_code=500)
         return json_response(self._settings_payload())
+
+    async def save_workflow_notes(self):
+        """保存工作流文件的说明（存插件数据目录，不改工作流本身）。"""
+        payload = await request.json(default={})
+        notes = payload.get("notes") if isinstance(payload, dict) else None
+        if not isinstance(notes, dict):
+            return error_response("notes 必须是对象", status_code=400)
+        clean = {str(k): str(v or "") for k, v in notes.items() if str(k).endswith(".json")}
+        path = self._notes_path()
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(clean, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        except OSError as exc:
+            return error_response(f"写入说明失败：{exc}", status_code=500)
+        return json_response(self._settings_payload())
+
+    async def upload_workflow(self):
+        """上传一个 ComfyUI API 格式工作流 JSON。"""
+        payload = await request.json(default={})
+        raw_b64 = str(payload.get("data") or "")
+        if "," in raw_b64[:64]:
+            raw_b64 = raw_b64.split(",", 1)[1]
+        try:
+            blob = base64.b64decode(raw_b64, validate=False)
+        except Exception:  # noqa: BLE001
+            return error_response("base64 解码失败", status_code=400)
+        if not blob:
+            return error_response("空文件", status_code=400)
+        if len(blob) > 4 * 1024 * 1024:
+            return error_response("工作流文件超过 4MB", status_code=413)
+        try:
+            data = json.loads(blob.decode("utf-8"))
+        except Exception:  # noqa: BLE001
+            return error_response("不是合法 JSON", status_code=400)
+        if not isinstance(data, dict) or not any(
+            isinstance(node, dict) and node.get("class_type") for node in data.values()
+        ):
+            return error_response("不是 ComfyUI API 格式（需要 节点id → {class_type, inputs}）", status_code=400)
+
+        name = Path(str(payload.get("filename") or "workflow.json")).name
+        if not name.endswith(".json"):
+            name += ".json"
+        workflow_dir = self.plugin.pipeline.workflow_dir if self.plugin.pipeline else self.plugin.root / "workflows"
+        workflow_dir.mkdir(parents=True, exist_ok=True)
+        target = workflow_dir / name
+        if target.exists() and not bool(payload.get("overwrite")):
+            return error_response(f"{name} 已存在，勾选覆盖再上传", status_code=409)
+        try:
+            target.write_bytes(blob)
+        except OSError as exc:
+            return error_response(f"写入失败：{exc}", status_code=500)
+        return json_response({"ok": True, "name": name, **self._settings_payload()})
 
     async def workflows(self):
         try:
@@ -304,11 +410,18 @@ class PageAPI:
                     "is_default": entry.key == plugin.catalog.default_key,
                     "tags": list(entry.tags),
                     "aliases": list(entry.aliases),
+                    "author_params": dict(entry.author_params),
                 }
                 for entry in plugin.catalog.items()
             ],
             "workflows": self._workflow_files(),
             "workflow_usage": self._workflow_usage(),
+            "workflow_notes": self._workflow_notes(),
+            "backend": {
+                "type": "comfyui",
+                "label": "ComfyUI（本地 HTTP）",
+                "base_url": str((cfg.get("comfyui") or {}).get("base_url") or ""),
+            },
             "diagnostics": self._diagnostics(),
             "paths": {
                 "workflow_dir": str(workflow_dir),
@@ -321,6 +434,17 @@ class PageAPI:
                 "host_plugin_dir": self._host_path(str(plugin.root)),
             },
         }
+
+    def _notes_path(self) -> Path:
+        return self.plugin.data_dir / "workflow_notes.json"
+
+    def _workflow_notes(self) -> dict[str, str]:
+        path = self._notes_path()
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            return {}
+        return {str(k): str(v) for k, v in data.items()} if isinstance(data, dict) else {}
 
     def _workflow_usage(self) -> dict[str, list[str]]:
         """工作流文件 → 引用它的模型 key 列表，用来发现"孤儿"文件。"""

@@ -49,7 +49,7 @@ _GROUP_BLOCK_HINTS = ("nude", "naked", "topless", "裸", "脱光", "全裸")
     "tsukiyo_media",
     "Mio (tsukiyo-zero)",
     "低耦合生成插件：本地 ComfyUI / 在线 API，文生图·自拍·参考图·编辑，预留视频",
-    "0.3.1",
+    "0.4.0",
 )
 class TsukiyoMediaPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):

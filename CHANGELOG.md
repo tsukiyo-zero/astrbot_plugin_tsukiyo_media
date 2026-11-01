@@ -2,6 +2,19 @@
 
 遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.4.0] - 2026-11-02
+
+### 新增
+- 设置页重做：**模型表格可直接增删改**（label / 工作流 / steps / cfg / 尺寸 / 采样器 / 调度器 / 别名 / 标签 / 启用 / 默认），保存即写回 `models.json`
+- **上传工作流**：页面直接传 ComfyUI API 格式 JSON 到 `workflows/`，可选覆盖；上传前校验必须是 API 格式
+- **工作流说明**：每个工作流可写一句备注（存插件数据目录的 `workflow_notes.json`，不动你的工作流文件），并显示"被哪些模型使用 / 用于哪一档"
+- 顶部**页签**：生成 / 设置 两个视图互相跳转（沿用 Dashboard 的 path token，不破坏鉴权）
+- 头部明确标注**后端类型**（当前仅「ComfyUI（本地 HTTP）」，在线 API 在路线图）
+
+### 修复
+- 输入框与面板同色，看起来像只读 → 输入框改用更亮的底色 + hover/focus 描边，只读态用虚线边框区分
+- 复制按钮在 iframe 里报"复制失败" → 先试 `navigator.clipboard`，再降级 `execCommand('copy')`，都失败才提示手动选中
+
 ## [0.3.1] - 2026-11-02
 
 ### 新增

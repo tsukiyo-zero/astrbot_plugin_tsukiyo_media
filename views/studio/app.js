@@ -258,6 +258,16 @@ async function uploadReference(file) {
   }
 }
 
+function viewUrl(name) {
+  const match = location.pathname.match(/\/views\/([^/]+)\//);
+  if (!match) return "#";
+  return location.pathname.replace(`/views/${match[1]}/`, `/views/${name}/`);
+}
+
+for (const tab of document.querySelectorAll("#tabs a")) {
+  tab.href = viewUrl(tab.dataset.view);
+}
+
 ui.generate.addEventListener("click", generate);
 ui.refresh.addEventListener("click", loadStatus);
 ui.historyBtn.addEventListener("click", loadHistory);

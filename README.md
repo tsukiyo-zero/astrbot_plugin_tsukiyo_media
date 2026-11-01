@@ -73,8 +73,11 @@ git clone https://github.com/tsukiyo-zero/astrbot_plugin_tsukiyo_media.git
 - 生成默认：全局负向词、作者词拼接方式、并发、文件前缀、是否丢弃中文
 - 三档参数：自拍 / 参考图 / 编辑各自的工作流、固定词、IPA 权重、尺寸（工作流用下拉选，不用手打文件名）
 - 路径：工作流目录、出图目录、**宿主机 data 目录**（填了之后能显示并复制宿主路径，方便在资源管理器里打开）
-- 模型表：逐个**启用/停用**、设默认、给每个模型换工作流
+- 模型表：**直接在页面增删改**（label / 工作流 / steps / cfg / 尺寸 / 采样器 / 调度器 / 别名 / 标签），勾启用、设默认，保存写回 `models.json`
+- 工作流：**页面上传** API 格式 JSON；每个文件可写一句说明，并显示被哪些模型、哪一档使用
 - 保存后**热重建运行时**（不重启 AstrBot）；停用的模型不会出现在生成页，也不会被自动选模命中
+
+> 当前后端只支持**本地 ComfyUI**（HTTP API）；在线图片 API 在路线图里。
 
 页面由 `views/studio/`、`views/settings/` 提供，后端接口在 `page_api.py`；路由前缀固定为 `/<插件名>`，
 前端通过 `window.AstrBotPluginView` 的 `apiGet` / `apiPost` 调用，不需要改 AstrBot 前端。

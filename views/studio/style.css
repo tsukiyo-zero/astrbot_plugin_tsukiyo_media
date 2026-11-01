@@ -136,7 +136,7 @@ body {
 select,
 input,
 textarea {
-  background: var(--panel-2);
+  background: var(--input-bg, var(--panel-2));
   color: var(--text);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -359,4 +359,60 @@ button.ghost {
   color: var(--text);
   font-size: 13px;
   line-height: 1.6;
+}
+
+:root {
+  --input-bg: #262b36;
+  --input-bg-hover: #2c323f;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --input-bg: #ffffff;
+    --input-bg-hover: #fbfcfe;
+  }
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  background: var(--input-bg-hover);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, var(--muted) 75%, transparent);
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tabs a {
+  padding: 7px 14px;
+  color: var(--muted);
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  font-size: 13px;
+}
+
+.tabs a:hover { color: var(--text); background: var(--panel-2); }
+
+.tabs a.active {
+  color: var(--text);
+  background: var(--panel);
+  border-color: var(--line);
+  margin-bottom: -1px;
 }
