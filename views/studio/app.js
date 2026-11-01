@@ -488,6 +488,30 @@ function modelRow(model, index) {
   const tdLabel = document.createElement("td");
   tdLabel.appendChild(label);
 
+  const group = document.createElement("select");
+  for (const pair of [["anime", "动漫系"], ["real", "写实系"], ["other", "其他"], ["", "未分类"]]) {
+    const option = document.createElement("option");
+    option.value = pair[0];
+    option.textContent = pair[1];
+    if ((model.group || "") === pair[0]) option.selected = true;
+    group.appendChild(option);
+  }
+  group.addEventListener("change", () => {
+    state.models[index].group = group.value;
+  });
+  const tdGroup = document.createElement("td");
+  tdGroup.appendChild(group);
+
+  const desc = document.createElement("input");
+  desc.value = model.desc || "";
+  desc.placeholder = "一句话定位，如 肤感极佳";
+  desc.className = "cell-text";
+  desc.addEventListener("input", () => {
+    state.models[index].desc = desc.value;
+  });
+  const tdDesc = document.createElement("td");
+  tdDesc.appendChild(desc);
+
   const wf = document.createElement("select");
   fillWorkflowSelect(wf, model.workflow);
   wf.addEventListener("change", () => {
@@ -560,7 +584,7 @@ function modelRow(model, index) {
   const tdAction = document.createElement("td");
   tdAction.appendChild(del);
 
-  tr.append(tdEnabled, tdDefault, tdKey, tdLabel, tdWf);
+  tr.append(tdEnabled, tdDefault, tdKey, tdLabel, tdGroup, tdDesc, tdWf);
   for (const cell of cells) tr.appendChild(cell);
   tr.appendChild(tdAction);
   return tr;
@@ -571,7 +595,7 @@ function renderModelTable() {
   body.innerHTML = "";
   state.models.forEach((model, index) => body.appendChild(modelRow(model, index)));
   if (!state.models.length) {
-    body.innerHTML = '<tr><td colspan="14" class="hint">还没有模型，点「新增模型」</td></tr>';
+    body.innerHTML = '<tr><td colspan="16" class="hint">还没有模型，点「新增模型」</td></tr>';
   }
 }
 
@@ -733,6 +757,8 @@ async function saveAll() {
       kept.push(key);
       models[key] = {
         label: item.label || key,
+        group: item.group || "",
+        desc: item.desc || "",
         workflow: item.workflow,
         enabled: item.enabled !== false,
         aliases: item.aliases || [],
@@ -780,6 +806,8 @@ function addModel() {
     workflow: state.files[0] || "",
     enabled: true,
     is_default: state.models.length === 0,
+    group: "anime",
+    desc: "",
     aliases: [],
     tags: [],
     author_params: { steps: 30, cfg: 5, width: 832, height: 1216, sampler_name: "euler_ancestral", scheduler: "normal" },

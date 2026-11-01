@@ -406,6 +406,11 @@ class PageAPI:
                     return error_response(f"模型 {key} 缺少 workflow", status_code=400)
                 if "enabled" in item:
                     entry["enabled"] = bool(item["enabled"])
+                if "group" in item:
+                    group = str(item.get("group") or "").strip().lower()
+                    entry["group"] = group if group in {"anime", "real", "other"} else ""
+                if "desc" in item:
+                    entry["desc"] = str(item.get("desc") or "").strip()[:80]
                 if "aliases" in item:
                     entry["aliases"] = _as_list(item.get("aliases"))
                 if "tags" in item:
@@ -593,6 +598,8 @@ class PageAPI:
                     "is_default": entry.key == plugin.catalog.default_key,
                     "tags": list(entry.tags),
                     "aliases": list(entry.aliases),
+                    "group": entry.group,
+                    "desc": entry.desc,
                     "author_params": dict(entry.author_params),
                 }
                 for entry in plugin.catalog.items()
