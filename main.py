@@ -1,4 +1,4 @@
-"""月夜工坊（tsukiyo_media）· AstrBot 入口。
+"""月夜绘影（tsukiyo_media）· AstrBot 入口。
 
 设计边界（刻意保持窄）：
 - 只负责“怎么生成”：后端连接（ComfyUI / 在线 API）、工作流绑定、提示词拼装、产物落盘。
@@ -48,7 +48,7 @@ _GROUP_BLOCK_HINTS = ("nude", "naked", "topless", "裸", "脱光", "全裸")
     "tsukiyo_media",
     "Mio (tsukiyo-zero)",
     "低耦合生成插件：本地 ComfyUI / 在线 API，文生图·自拍·参考图·编辑，预留视频",
-    "0.2.0",
+    "0.2.1",
 )
 class TsukiyoMediaPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):

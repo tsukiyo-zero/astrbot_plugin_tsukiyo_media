@@ -1,4 +1,4 @@
-# astrbot_plugin_tsukiyo_media · 月夜工坊
+# astrbot_plugin_tsukiyo_media · 月夜绘影
 
 一个**低耦合**的 AstrBot 生成插件：把「一段描述」变成「一张图」（后续扩展到视频）。
 
@@ -47,7 +47,7 @@ git clone https://github.com/tsukiyo-zero/astrbot_plugin_tsukiyo_media.git
 
 ## 可视化页面（Studio）
 
-启用插件后，AstrBot WebUI → **插件** → **月夜工坊** → 打开 `Studio` 视图，可以做：
+启用插件后，AstrBot WebUI → **插件** → **月夜绘影** → 打开 `Studio` 视图，可以做：
 
 - 看后端状态：ComfyUI 版本、显存占用、队列长度（离线时直接显示原因）
 - 选链路（自动 / 文生图 / 自拍 / 参考图 / 编辑）与模型
@@ -193,6 +193,15 @@ tests/                      不依赖网络的单元测试
 - [ ] v0.4 LLM 辅助选模（`routing.mode=llm`，规则兜底）
 - [ ] v0.5 任务队列与取消、并发上限可视化
 - [ ] v0.6 hires 二次细化、局部重绘（SAM）
+
+## 致谢
+
+- 随插件附带的工作流模板与各底模的**作者参数**（steps / cfg / sampler / scheduler / 尺寸），
+  来自我们此前使用的 [`astrbot_plugin_image_companion`](https://github.com/menglimi/astrbot_plugin_image_companion)（作者 menglimi）的配置；
+  底模与采样参数的版权归各模型作者，本仓库只做参数整理与结构绑定
+- 插件可视化视图的 bridge 用法与 Web API 约定，参照 AstrBot 官方文档
+  [插件可视化视图](https://docs.astrbot.app/dev/star/guides/plugin-pages.html)
+- 插件目录/metadata/依赖约定遵循 [插件开发指南](https://docs.astrbot.app/dev/star/plugin-new.html)
 
 ## License
 

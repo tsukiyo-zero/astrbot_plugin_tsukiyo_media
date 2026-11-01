@@ -2,6 +2,13 @@
 
 遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.2.1] - 2026-11-02
+
+### 变更
+- 显示名改为 **月夜绘影**，插件系列统一「月夜」前缀（后续插件命名 `月夜XX`）
+- `metadata.author` 改为稳定包身份 `tsukiyo-zero`（原 `Mio (tsukiyo-zero)` 含空格括号，会让市场 `plugin_id` 不规范）
+- 补齐市场元数据：`logo.png`（256×256）、`tags`、`social_link`
+
 ## [0.2.0] - 2026-11-02
 
 ### 新增
@@ -16,7 +23,7 @@
 
 ## [0.1.0] - 2026-11-02
 
-首个可运行版本（仓库名 `astrbot_plugin_tsukiyo_media`，显示名「月夜工坊」，作者 Mio / tsukiyo-zero）。
+首个可运行版本（仓库名 `astrbot_plugin_tsukiyo_media`，显示名「月夜绘影」，作者 Mio / tsukiyo-zero）。
 
 ### 新增
 - ComfyUI HTTP 客户端：`/prompt`、`/history/{id}`、`/view`、`/upload/image`、`/queue`、`/interrupt`
