@@ -19,6 +19,38 @@
     </header>
     <p class="hint" id="status"></p>
 
+    <section class="panel panel-wide onboarding">
+      <h2>这个插件怎么跑起来</h2>
+      <p class="hint">
+        三个概念：<b>模型</b> = <code>models.json</code> 里的一条（key + 工作流 + 作者参数）；
+        <b>工作流</b> = <code>workflows/</code> 里的 ComfyUI <b>API 格式</b> JSON；
+        <b>后端</b> = 你在下面填的 ComfyUI 地址。
+      </p>
+      <ol>
+        <li>在 ComfyUI 里「导出 (API)」得到工作流 json，放进 <code id="o-wf"></code> <button class="ghost" data-copy="o-wf">复制</button></li>
+        <li>在 <code id="o-models"></code> 里加一条模型，<code>workflow</code> 填上面那个文件名 <button class="ghost" data-copy="o-models">复制</button></li>
+        <li>回本页「模型」表，给它选工作流并勾上启用，然后去 Studio 生成</li>
+      </ol>
+      <div class="pathinfo">
+        <div><span class="hint">插件目录（容器内）</span><code id="o-plugin"></code><button class="ghost" data-copy="o-plugin">复制</button></div>
+        <div><span class="hint">插件目录（宿主机）</span><code id="o-plugin-host"></code><button class="ghost" data-copy="o-plugin-host">复制</button></div>
+      </div>
+    </section>
+
+    <section class="panel panel-wide">
+      <h2>自检</h2>
+      <ul class="diag" id="diag"><li class="hint">读取中…</li></ul>
+    </section>
+
+    <section class="panel panel-wide">
+      <h2>工作流文件</h2>
+      <p class="hint">这里列出 <code id="o-wf2"></code> 下的全部 json，以及它们在 <code>models.json</code> 里被哪些模型使用。</p>
+      <table class="models">
+        <thead><tr><th>文件</th><th>被哪些模型使用</th></tr></thead>
+        <tbody id="wf-body"><tr><td colspan="2" class="hint">读取中…</td></tr></tbody>
+      </table>
+    </section>
+
     <main class="grid">
       <section class="panel">
         <h2>后端连接</h2>

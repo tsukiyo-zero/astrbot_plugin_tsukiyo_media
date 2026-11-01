@@ -115,7 +115,55 @@ function applySettings(data) {
   const paths = data.paths || {};
   el("p-wf").textContent = paths.workflow_dir || "";
   el("p-host").textContent = paths.host_workflow_dir || "（未配置宿主目录）";
+
+  el("o-wf").textContent = paths.workflow_dir || "";
+  const wf2 = el("o-wf2");
+  if (wf2) wf2.textContent = paths.workflow_dir || "";
+  el("o-models").textContent = paths.models_json || "";
+  el("o-plugin").textContent = paths.plugin_dir || "";
+  el("o-plugin-host").textContent = paths.host_plugin_dir || "（在下面填宿主机 data 目录后显示）";
+
+  renderDiagnostics(data.diagnostics || []);
+  renderWorkflowTable(data.workflows || [], data.workflow_usage || {});
   renderModels(data.models || []);
+}
+
+function renderDiagnostics(items) {
+  const list = el("diag");
+  if (!list) return;
+  list.innerHTML = "";
+  if (!items.length) {
+    list.innerHTML = '<li class="hint">无</li>';
+    return;
+  }
+  for (const item of items) {
+    const li = document.createElement("li");
+    li.className = `diag-item ${item.level || "info"}`;
+    const tag = { error: "错误", warn: "注意", info: "提示", ok: "正常" }[item.level] || "提示";
+    li.innerHTML = `<span class="diag-tag">${tag}</span>${item.message || ""}`;
+    list.appendChild(li);
+  }
+}
+
+function renderWorkflowTable(files, usage) {
+  const body = el("wf-body");
+  if (!body) return;
+  body.innerHTML = "";
+  if (!files.length) {
+    body.innerHTML = '<tr><td colspan="2" class="hint">工作流目录里没有 json</td></tr>';
+    return;
+  }
+  for (const name of files) {
+    const tr = document.createElement("tr");
+    const tdName = document.createElement("td");
+    tdName.innerHTML = `<code>${name}</code>`;
+    const tdUse = document.createElement("td");
+    const owners = usage[name] || [];
+    tdUse.textContent = owners.length ? owners.join(", ") : "（未被引用）";
+    if (!owners.length) tdUse.className = "hint";
+    tr.append(tdName, tdUse);
+    body.appendChild(tr);
+  }
 }
 
 function collectConfig() {

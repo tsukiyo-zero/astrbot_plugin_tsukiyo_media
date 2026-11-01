@@ -308,15 +308,83 @@ class PageAPI:
                 for entry in plugin.catalog.items()
             ],
             "workflows": self._workflow_files(),
+            "workflow_usage": self._workflow_usage(),
+            "diagnostics": self._diagnostics(),
             "paths": {
                 "workflow_dir": str(workflow_dir),
                 "output_dir": str(plugin.pipeline.output_dir) if plugin.pipeline else "",
                 "models_json": str(plugin.catalog.path),
                 "reference_dir": str(plugin.reference_dir),
+                "plugin_dir": str(plugin.root),
                 "host_data_dir": cfg.get("paths", {}).get("host_data_dir", "") if isinstance(cfg.get("paths"), dict) else "",
                 "host_workflow_dir": self._host_path(str(workflow_dir)),
+                "host_plugin_dir": self._host_path(str(plugin.root)),
             },
         }
+
+    def _workflow_usage(self) -> dict[str, list[str]]:
+        """工作流文件 → 引用它的模型 key 列表，用来发现"孤儿"文件。"""
+        usage: dict[str, list[str]] = {}
+        for entry in self.plugin.catalog.items():
+            usage.setdefault(entry.workflow, []).append(entry.key)
+        return usage
+
+    def _diagnostics(self) -> list[dict[str, str]]:
+        """上手自检：把"新手最容易卡住的地方"直接列出来。"""
+        plugin = self.plugin
+        cfg = plugin.config if isinstance(plugin.config, dict) else {}
+        items: list[dict[str, str]] = []
+
+        def add(level: str, message: str) -> None:
+            items.append({"level": level, "message": message})
+
+        comfy = cfg.get("comfyui") if isinstance(cfg.get("comfyui"), dict) else {}
+        base_url = str((comfy or {}).get("base_url") or "").strip()
+        if not base_url:
+            add("error", "没有填写 ComfyUI 地址，生成会直接失败。本机填写 http://127.0.0.1:8188；AstrBot 在 Docker 里请填 http://host.docker.internal:8188")
+        elif base_url.startswith("http://127.0.0.1") and Path("/AstrBot").exists():
+            add("warn", "当前 AstrBot 跑在容器里，127.0.0.1 指向容器自己而不是宿主机；通常需要改成 http://host.docker.internal:8188")
+
+        workflow_dir = plugin.pipeline.workflow_dir if plugin.pipeline else None
+        if workflow_dir is not None and not workflow_dir.exists():
+            add("error", f"工作流目录不存在：{workflow_dir}")
+        files = set(self._workflow_files())
+        if not files:
+            add("error", "工作流目录里没有任何 .json，至少要放一个 ComfyUI 导出的 API 格式工作流")
+
+        for entry in plugin.catalog.items():
+            if entry.workflow not in files:
+                add("error", f"模型「{entry.key}」指向的工作流 {entry.workflow} 不在目录里")
+        for kind, label in (("selfie", "自拍"), ("reference", "参考图"), ("edit", "编辑")):
+            section = cfg.get(kind) if isinstance(cfg.get(kind), dict) else {}
+            workflow = str((section or {}).get("workflow") or "").strip()
+            if workflow and workflow not in files:
+                add("error", f"{label}档的工作流 {workflow} 不在目录里")
+
+        if not plugin.catalog.enabled_items():
+            add("error", "所有模型都被停用了，生成页会是空的")
+
+        selfie = cfg.get("selfie") if isinstance(cfg.get("selfie"), dict) else {}
+        if not str((selfie or {}).get("reference_image") or "").strip():
+            add("warn", "自拍档没配人设参考图，出图只是通用角色、不带角色一致性（可留空，但建议配一张）")
+
+        if plugin.pipeline is not None:
+            out_dir = plugin.pipeline.output_dir
+            try:
+                out_dir.mkdir(parents=True, exist_ok=True)
+                probe = out_dir / ".write_test"
+                probe.write_text("ok", encoding="utf-8")
+                probe.unlink()
+            except OSError as exc:
+                add("error", f"出图目录不可写：{out_dir}（{exc}）")
+
+        orphan = sorted(name for name in files if name not in self._workflow_usage())
+        if orphan:
+            add("info", "这些工作流没有被任何模型引用（留着也没关系）：" + "、".join(orphan))
+
+        if not items:
+            add("ok", "没发现明显问题，可以直接去 Studio 生成")
+        return items
 
     def _workflow_files(self) -> list[str]:
         workflow_dir = self.plugin.pipeline.workflow_dir if self.plugin.pipeline else self.plugin.root / "workflows"

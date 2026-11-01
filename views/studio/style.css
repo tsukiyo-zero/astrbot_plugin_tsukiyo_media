@@ -349,3 +349,14 @@ button.ghost {
   border: 1px solid var(--line);
   display: block;
 }
+
+.banner {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #fbbf24 45%, var(--line));
+  background: color-mix(in srgb, #fbbf24 12%, var(--panel));
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.6;
+}

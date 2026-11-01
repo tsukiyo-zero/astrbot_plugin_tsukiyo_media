@@ -30,6 +30,16 @@ git clone https://github.com/tsukiyo-zero/astrbot_plugin_tsukiyo_media.git
 
 在 AstrBot 面板启用插件，填好 ComfyUI 地址（本机 `http://127.0.0.1:8188`；Docker 里跑 AstrBot 时用 `http://host.docker.internal:8188`）。
 
+## 第一次使用
+
+装好插件、填好 ComfyUI 地址后，还差三件事（打开 **设置** 视图，页顶就是同样的引导 + 自检）：
+
+1. **工作流**：把 ComfyUI 里「导出 (API)」得到的 json 放进插件的 `workflows/` 目录
+2. **模型**：在 `models.json` 里加一条，`workflow` 填上一步的文件名
+3. **启用**：设置页「模型」表里勾上启用、选好工作流
+
+设置页的「自检」会直接指出哪一步没做对：地址填错（Docker 里填了 `127.0.0.1`）、工作流缺失、模型引用的文件不存在、目录不可写、自拍参考图没配……
+
 ## 命令
 
 ```

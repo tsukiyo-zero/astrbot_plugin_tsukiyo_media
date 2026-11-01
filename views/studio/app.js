@@ -54,9 +54,29 @@ async function loadStatus() {
       ui.status.dataset.tone = "bad";
     }
     renderModels(data.models || [], data.default_model || "");
+    updateBanner(backend, data.models || []);
   } catch (err) {
     ui.status.textContent = `状态读取失败：${err.message || err}`;
     ui.status.dataset.tone = "bad";
+  }
+}
+
+function updateBanner(backend, models) {
+  const banner = document.getElementById("banner");
+  if (!banner) return;
+  const tips = [];
+  if (!backend.online) {
+    tips.push(`ComfyUI 连不上：${backend.error || "原因未知"}。到「设置」视图检查后端地址（Docker 里应为 http://host.docker.internal:8188）。`);
+  }
+  if (!models.length) {
+    tips.push("没有可用模型：到「设置」视图启用模型，或检查 models.json 是否存在于插件目录。");
+  }
+  if (tips.length) {
+    banner.innerHTML = tips.map((tip) => `<div>• ${tip}</div>`).join("");
+    banner.hidden = false;
+  } else {
+    banner.hidden = true;
+    banner.innerHTML = "";
   }
 }
 
