@@ -150,6 +150,32 @@ async function loadStatus() {
   }
 }
 
+const KIND_MAP = { auto: "auto", "文生图": "text2img", text2img: "text2img", selfie: "selfie", "自拍": "selfie", edit: "edit", "编辑": "edit", reference: "reference", "参考图": "reference" };
+
+function loadRequestIntoForm(item) {
+  const req = (item.receipt && item.receipt.request) || {};
+  const hasAnything = req.prompt || req.kind || req.model_key;
+  if (!hasAnything) {
+    setStatus("这条记录没有存原始参数（旧版本生成的），只能看不能重跑", "warn");
+    return false;
+  }
+  if (req.prompt) el("prompt").value = req.prompt;
+  if (req.kind) {
+    const kind = KIND_MAP[String(req.kind)] || KIND_MAP[String(req.kind).toLowerCase()] || "auto";
+    el("kind").value = kind;
+  }
+  if (req.model_key) el("model").value = req.model_key;
+  if (req.width) el("width").value = req.width;
+  if (req.height) el("height").value = req.height;
+  if (req.seed !== undefined && req.seed !== null && req.seed !== "") el("seed").value = req.seed;
+  else el("seed").value = -1;
+  el("negative").value = req.extra_negative || "";
+  syncModelHint();
+  switchTab("generate");
+  setStatus("已载入上次参数，点「生成」即可重跑", "warn");
+  return true;
+}
+
 function showImage(image) {
   const preview = el("preview");
   preview.innerHTML = "";
@@ -358,6 +384,7 @@ async function loadHistory() {
       card.addEventListener("click", () => {
         showImage(item);
         if (item.receipt && item.receipt.ok) showReceipt(item.receipt);
+        loadRequestIntoForm(item);
       });
       grid.appendChild(card);
     }

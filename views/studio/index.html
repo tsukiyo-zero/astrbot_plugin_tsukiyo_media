@@ -228,6 +228,18 @@
             <tbody id="models-body"></tbody>
           </table>
         </div>
+        <details class="advanced">
+          <summary>采样器 / 调度器怎么选</summary>
+          <ul class="hint sampler-help">
+            <li><code>euler_ancestral</code> — 最快最通用，动漫感强，细节略噪（默认首选）</li>
+            <li><code>dpmpp_2m</code> — 稳，写实人像常用，观感干净</li>
+            <li><code>dpmpp_2m_sde</code> — 细节更多，速度慢一些</li>
+            <li><code>lcm</code> — 4~8 步就能出图，适合草稿/快速看效果</li>
+            <li><code>ddim</code> — 平直，老模型兼容好</li>
+            <li><code>uni_pc</code> — 通用收敛稳，参数不折腾</li>
+            <li>调度器：<code>normal</code> 线性（通用）；<code>karras</code> 高光收敛好（写实常用）；<code>exponential</code> 亮部柔和；<code>sgm_uniform</code> 均匀</li>
+          </ul>
+        </details>
       </section>
 
       <section class="panel">

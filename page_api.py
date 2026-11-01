@@ -15,6 +15,7 @@ from typing import Any
 from astrbot.api import logger
 
 from .backends.comfyui.binder import resolve_roles
+from .core.imaging import compress_image_bytes
 from .core.types import ImageRequest, normalize_kind
 
 PLUGIN_NAME = "astrbot_plugin_tsukiyo_media"
@@ -162,9 +163,12 @@ class PageAPI:
             return error_response("空文件", status_code=400)
         if len(blob) > 20 * 1024 * 1024:
             return error_response("参考图超过 20MB", status_code=413)
+        blob, compressed_suffix = compress_image_bytes(blob)
         suffix = Path(str(payload.get("filename") or "upload.png")).suffix.lower()
         if suffix not in {".png", ".jpg", ".jpeg", ".webp"}:
             suffix = ".png"
+        if compressed_suffix:
+            suffix = compressed_suffix
         target_dir = plugin.reference_dir
         target_dir.mkdir(parents=True, exist_ok=True)
         target = target_dir / f"ui_{int(time.time() * 1000)}{suffix}"

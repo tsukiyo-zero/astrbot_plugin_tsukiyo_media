@@ -16,6 +16,7 @@ from ..backends.comfyui.binder import BindValues, apply_values, resolve_roles
 from ..backends.comfyui.client import ComfyUIClient
 from .catalog import ModelCatalog
 from .errors import BackendError, ConfigError, RoutingError, WorkflowNotFound
+from .imaging import compress_image_bytes
 
 HISTORY_LIMIT = 60
 from .prompt import build_prompt
@@ -90,13 +91,25 @@ class ImagePipeline:
             return
         self.records = [item for item in raw if isinstance(item, dict)][-HISTORY_LIMIT:]
 
-    def _save_history(self, result: GenerationResult) -> None:
+    def _save_history(self, result: GenerationResult, request: ImageRequest | None = None) -> None:
         if self.history_path is None:
             return
         record = result.to_receipt()
         record["ts"] = int(time.time())
         record["positive"] = result.positive[:4000]
         record["negative"] = result.negative[:2000]
+        if request is not None:
+            # 供"重跑"用：原始请求，而不是最终的拼接结果
+            record["request"] = {
+                "prompt": request.prompt,
+                "kind": request.kind,
+                "model_key": request.model_key,
+                "width": request.width,
+                "height": request.height,
+                "seed": request.seed,
+                "extra_negative": request.extra_negative,
+                "references": list(request.references[:1]),
+            }
         self.records = (self.records + [record])[-HISTORY_LIMIT:]
         try:
             self.history_path.parent.mkdir(parents=True, exist_ok=True)
@@ -170,7 +183,7 @@ class ImagePipeline:
         finally:
             result.elapsed_ms = int((time.monotonic() - started) * 1000)
             self.history = (self.history + [result])[-10:]
-            self._save_history(result)
+            self._save_history(result, request)
         return result
 
     async def _run(self, request: ImageRequest, result: GenerationResult, on_submit=None) -> None:
@@ -271,4 +284,9 @@ class ImagePipeline:
         if not source.exists():
             raise RoutingError(f"参考图不存在：{source}")
         data = source.read_bytes()
-        return await self.client.upload_image(data, source.name)
+        name = source.name
+        compressed, suffix = compress_image_bytes(data)
+        if compressed is not data and suffix:
+            data = compressed
+            name = source.stem + suffix
+        return await self.client.upload_image(data, name)

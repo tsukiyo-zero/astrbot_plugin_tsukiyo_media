@@ -384,3 +384,6 @@ table.models td select {
 table.models td input[placeholder="比如：obsession 华丽 · 30 步 CFG 4.5"] {
   min-width: 200px;
 }
+
+.sampler-help { margin: 6px 0 0; padding-left: 18px; line-height: 1.9; }
+.sampler-help li { margin-bottom: 2px; }
