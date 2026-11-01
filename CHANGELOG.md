@@ -10,6 +10,7 @@
 - **自拍 / 参考图 / 编辑也能用「模型」换画风**：工作流结构保持专用（IP-Adapter / img2img 不变），底模换成所选模型工作流里的 checkpoint，步数 / CFG / 采样器 / 尺寸跟该模型的作者参数走；不选模型时行为与之前完全一致
 - **选模型时作者正负向词一起跟随**：这三条链路不再固定用 `selfie-ref.json` 里那套 obsession 作者词，而是取所选模型 `draw-*.json` 的 pos/neg；人设词、固定提示词、你的描述仍追加在后面。以前选 `miao` 跑自拍，底模换了但作者词还是 obsession 的（`bad feet`、`pale_skin` 都不会进来）
 - 新增 `tests/test_pipeline.py`（`build_plan` / checkpoint / 作者词解析），并在 `tests/test_binder.py` 加底模与作者词覆盖用例
+- **自拍档「默认模型」**：设置页三档的「自拍」里多一个模型下拉（存 `selfie.model`）。QQ 自拍、`/img selfie`、`tsukiyo_image_generate` 没显式传 `model_key` 时用它（底模 + 作者词 + 参数一起换）；页面生成仍以页面选的模型为准；默认模型被删/停用会自动退回工作流自带参数，不阻塞出图
 
 ### 修复
 - **设置页保存会把三档工作流写坏**：`applyConfig()` 先给 `<select>` 赋值、后填 `<option>`，值被丢弃后浏览器自动选中列表第一项（`draw-cat.json`），点保存就把「自拍 / 参考图 / 编辑」全写成纯文生图，参考图被静默忽略。改为**先填选项、再用配置值回填**；未配置时插入空选项「（未设置，用默认）」，不再把第一项当成用户选择

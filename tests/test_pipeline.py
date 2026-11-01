@@ -49,6 +49,32 @@ class BuildPlanTest(unittest.TestCase):
         self.assertEqual(profile.workflow, "selfie-ref.json")
         self.assertEqual((profile.width, profile.height), (768, 1280))
 
+    def test_selfie_uses_profile_default_model(self) -> None:
+        """QQ/命令/工具没传 model_key 时，用该档配置的默认模型。"""
+        self.pipeline.settings.profiles[KIND_SELFIE].model_key = "pixel"
+        kind, entry, profile = self.pipeline.build_plan(
+            ImageRequest(prompt="x", kind=KIND_SELFIE)
+        )
+        self.assertIsNotNone(entry)
+        self.assertEqual(entry.key, "pixel")
+        self.assertEqual((profile.width, profile.height), (768, 1280))
+
+    def test_request_model_wins_over_profile_default(self) -> None:
+        self.pipeline.settings.profiles[KIND_SELFIE].model_key = "pixel"
+        _, entry, _ = self.pipeline.build_plan(
+            ImageRequest(prompt="x", kind=KIND_SELFIE, model_key="miao")
+        )
+        self.assertEqual(entry.key, "miao")
+
+    def test_missing_profile_default_model_falls_back(self) -> None:
+        """默认模型被删了也不能把出图卡死。"""
+        self.pipeline.settings.profiles[KIND_SELFIE].model_key = "no-such-model"
+        _, entry, profile = self.pipeline.build_plan(
+            ImageRequest(prompt="x", kind=KIND_SELFIE)
+        )
+        self.assertIsNone(entry)
+        self.assertEqual(profile.workflow, "selfie-ref.json")
+
     def test_checkpoint_of_reads_model_workflow(self) -> None:
         self.assertEqual(
             self.pipeline.checkpoint_of("draw-pixel.json"),
