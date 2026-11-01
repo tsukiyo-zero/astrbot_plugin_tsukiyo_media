@@ -2,6 +2,16 @@
 
 遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.5.0] - 2026-11-02
+
+### 修复
+- **点页签后报「Token 无效」**：AstrBot 的插件页面 token 是按路径授权的（`is_scope_valid(payload, path)`），跨视图复用必然失效。改为**单一视图 + 页面内页签**，删掉独立的 settings 视图
+
+### 新增
+- **生成进度**：新接口 `POST /generate/stream`（SSE），提交后立刻推 prompt_id，随后推「排队中/生成中/收尾中」和耗时，页面显示进度条与阶段
+- **历史持久化**：每次生成写入插件数据目录 `history.json`（保留 60 条），重启后 Studio 仍能看到缩略图与参数；`GET /history` 改读持久化记录
+- 生成页与设置页合并为一个视图，顶部只保留「生成 / 设置」两个页签
+
 ## [0.4.0] - 2026-11-02
 
 ### 新增

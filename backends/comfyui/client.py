@@ -93,6 +93,10 @@ class ComfyUIClient:
                 raise JobTimeout(f"等待 ComfyUI 出图超时（{limit:.0f}s）")
             await asyncio.sleep(self.poll_interval)
 
+    async def history_entry(self, prompt_id: str) -> dict[str, Any] | None:
+        """公开版本，供进度查询使用。"""
+        return await self._history_entry(prompt_id)
+
     async def _history_entry(self, prompt_id: str) -> dict[str, Any] | None:
         try:
             resp = await self._client.get(f"/history/{prompt_id}")

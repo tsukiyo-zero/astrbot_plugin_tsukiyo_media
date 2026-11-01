@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -15,6 +16,8 @@ from ..backends.comfyui.binder import BindValues, apply_values, resolve_roles
 from ..backends.comfyui.client import ComfyUIClient
 from .catalog import ModelCatalog
 from .errors import BackendError, ConfigError, RoutingError, WorkflowNotFound
+
+HISTORY_LIMIT = 60
 from .prompt import build_prompt
 from .router import route_kind, select_model
 from .types import (
@@ -61,6 +64,7 @@ class ImagePipeline:
         settings: PipelineSettings,
         workflow_dir: Path,
         output_dir: Path,
+        history_path: Path | None = None,
     ) -> None:
         self.client = client
         self.catalog = catalog
@@ -71,6 +75,36 @@ class ImagePipeline:
         self._workflow_cache: dict[str, tuple[float, dict[str, Any]]] = {}
         self._semaphore = asyncio.Semaphore(max(1, int(settings.max_concurrent)))
         self.history: list[GenerationResult] = []
+        self.history_path = Path(history_path) if history_path else None
+        self.records: list[dict[str, Any]] = []
+        self._load_history()
+
+    # ---------- 历史持久化 ----------
+    def _load_history(self) -> None:
+        if self.history_path is None:
+            return
+        try:
+            raw = json.loads(self.history_path.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001 - 首次运行/损坏都当空
+            self.records = []
+            return
+        self.records = [item for item in raw if isinstance(item, dict)][-HISTORY_LIMIT:]
+
+    def _save_history(self, result: GenerationResult) -> None:
+        if self.history_path is None:
+            return
+        record = result.to_receipt()
+        record["ts"] = int(time.time())
+        record["positive"] = result.positive[:4000]
+        record["negative"] = result.negative[:2000]
+        self.records = (self.records + [record])[-HISTORY_LIMIT:]
+        try:
+            self.history_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = self.history_path.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(self.records, ensure_ascii=False), encoding="utf-8")
+            tmp.replace(self.history_path)
+        except OSError:
+            pass
 
     # ---------- 资源 ----------
     def workflow_path(self, name: str) -> Path:
@@ -121,12 +155,12 @@ class ImagePipeline:
         return kind, None, profile
 
     # ---------- 主流程 ----------
-    async def generate(self, request: ImageRequest) -> GenerationResult:
+    async def generate(self, request: ImageRequest, on_submit=None) -> GenerationResult:
         started = time.monotonic()
         result = GenerationResult(seed=int(request.seed), kind=request.resolved_kind())
         try:
             async with self._semaphore:
-                await self._run(request, result)
+                await self._run(request, result, on_submit=on_submit)
         except (RoutingError, WorkflowNotFound, ConfigError, BackendError) as exc:
             result.ok = False
             result.error = str(exc)
@@ -136,9 +170,10 @@ class ImagePipeline:
         finally:
             result.elapsed_ms = int((time.monotonic() - started) * 1000)
             self.history = (self.history + [result])[-10:]
+            self._save_history(result)
         return result
 
-    async def _run(self, request: ImageRequest, result: GenerationResult) -> None:
+    async def _run(self, request: ImageRequest, result: GenerationResult, on_submit=None) -> None:
         kind, entry, profile = self.build_plan(request)
         result.kind = kind
         result.model_key = entry.key if entry else (request.model_key or kind)
@@ -196,6 +231,11 @@ class ImagePipeline:
 
         prompt_id = await self.client.submit(prompt)
         result.prompt_id = prompt_id
+        if on_submit is not None:
+            try:
+                on_submit(prompt_id)
+            except Exception:  # noqa: BLE001 - 回调失败不影响出图
+                pass
         outputs = await self.client.wait(prompt_id, timeout=self.settings.job_timeout)
         result.paths = await self._save_outputs(outputs, prompt_id)
         if not result.paths:

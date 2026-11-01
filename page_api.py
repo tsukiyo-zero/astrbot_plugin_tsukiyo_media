@@ -4,6 +4,7 @@ AstrBot 的插件视图通过 bridge 调用这些接口，路由前缀固定为 
 """
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import mimetypes
@@ -29,12 +30,12 @@ CONFIG_WHITELIST: dict[str, set[str]] = {
 }
 
 try:  # AstrBot >= 4.16 提供 astrbot.api.web
-    from astrbot.api.web import error_response, file_response, json_response, request
+    from astrbot.api.web import error_response, file_response, json_response, request, stream_response
 
     WEB_API_AVAILABLE = True
 except Exception:  # pragma: no cover - 老版本降级
     WEB_API_AVAILABLE = False
-    error_response = file_response = json_response = None  # type: ignore[assignment]
+    error_response = file_response = json_response = stream_response = None  # type: ignore[assignment]
     request = None  # type: ignore[assignment]
 
 
@@ -74,6 +75,8 @@ class PageAPI:
             ("/workflows", self.workflows, ["GET"], "工作流文件列表"),
             ("/workflows/notes", self.save_workflow_notes, ["POST"], "保存工作流说明"),
             ("/workflows/upload", self.upload_workflow, ["POST"], "上传工作流 JSON"),
+            ("/progress", self.progress, ["GET"], "生成进度 SSE"),
+            ("/generate/stream", self.generate_stream, ["POST"], "生成并推送进度 SSE"),
             ("/test", self.test_backend, ["POST"], "测试后端连接"),
         )
         for path, handler, methods, desc in routes:
@@ -177,9 +180,9 @@ class PageAPI:
         items: list[dict[str, Any]] = []
         known: dict[str, dict[str, Any]] = {}
         if plugin.pipeline:
-            for result in reversed(plugin.pipeline.history[-limit:]):
-                for path in result.paths:
-                    known[str(path)] = result.to_receipt()
+            for record in reversed(plugin.pipeline.records[-limit:]):
+                for path in record.get("paths") or ():
+                    known[str(path)] = record
         output_dir = plugin.pipeline.output_dir if plugin.pipeline else None
         if output_dir and output_dir.exists():
             files = sorted(
@@ -192,6 +195,132 @@ class PageAPI:
                 info["receipt"] = known.get(str(path), {})
                 items.append(info)
         return json_response({"ok": True, "items": items})
+
+    async def progress(self):
+        """SSE：轮询 ComfyUI 队列/历史，把排队与生成状态推给页面。"""
+        prompt_id = request.query.get("prompt_id", "", type=str) or ""
+        if not prompt_id:
+            return error_response("缺少 prompt_id", status_code=400)
+        client = self.plugin.client
+
+        async def events():
+            started = time.time()
+            last_state = ""
+            while True:
+                elapsed = round(time.time() - started, 1)
+                state = "unknown"
+                payload: dict[str, Any] = {"elapsed": elapsed, "prompt_id": prompt_id}
+                try:
+                    entry = await client.history_entry(prompt_id)
+                    if entry:
+                        status = str((entry.get("status") or {}).get("status_str") or "")
+                        state = "error" if status == "error" else "done"
+                    else:
+                        queue = await client.queue_state()
+                        running = [item[1] for item in queue.get("queue_running") or [] if len(item) > 1]
+                        pending = [item[1] for item in queue.get("queue_pending") or [] if len(item) > 1]
+                        if prompt_id in running:
+                            state = "running"
+                        elif prompt_id in pending:
+                            state = "queued"
+                            payload["position"] = pending.index(prompt_id) + 1
+                        else:
+                            state = "waiting"
+                except Exception as exc:  # noqa: BLE001
+                    state = "error"
+                    payload["error"] = str(exc)[:200]
+                payload["state"] = state
+                if state != last_state or state in {"running", "queued", "waiting"}:
+                    yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+                    last_state = state
+                if state in {"done", "error"}:
+                    return
+                if elapsed > 600:
+                    payload["state"] = "timeout"
+                    yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+                    return
+                await asyncio.sleep(0.8)
+
+        return stream_response(events())
+
+    async def generate_stream(self):
+        """POST + SSE：提交后立刻推 prompt_id，随后持续推排队/生成状态，最后推结果。"""
+        payload = await request.json(default={})
+        prompt = str(payload.get("prompt") or "").strip()
+        if not prompt:
+            return error_response("prompt 不能为空", status_code=400)
+        plugin = self.plugin
+        if plugin.pipeline is None:
+            return error_response("插件尚未初始化", status_code=503)
+        req = ImageRequest(
+            prompt=prompt,
+            kind=normalize_kind(payload.get("kind") or "auto"),
+            model_key=str(payload.get("model_key") or ""),
+            references=[str(payload.get("reference_path"))] if payload.get("reference_path") else [],
+            width=int(payload.get("width") or 0),
+            height=int(payload.get("height") or 0),
+            seed=int(payload.get("seed") or -1),
+            extra_negative=str(payload.get("negative") or ""),
+            extra_positive=str(payload.get("extra_positive") or ""),
+            source="ui",
+        )
+        client = plugin.client
+        holder: dict[str, str] = {}
+
+        def on_submit(prompt_id: str) -> None:
+            holder["prompt_id"] = prompt_id
+
+        task = asyncio.create_task(plugin.pipeline.generate(req, on_submit=on_submit))
+
+        async def events():
+            started = time.time()
+            last = ""
+            try:
+                while not task.done():
+                    elapsed = round(time.time() - started, 1)
+                    prompt_id = holder.get("prompt_id", "")
+                    state = "submitting"
+                    extra: dict[str, Any] = {"elapsed": elapsed, "prompt_id": prompt_id}
+                    if prompt_id:
+                        try:
+                            entry = await client.history_entry(prompt_id)
+                            if entry:
+                                status = str((entry.get("status") or {}).get("status_str") or "")
+                                state = "error" if status == "error" else "finishing"
+                            else:
+                                queue = await client.queue_state()
+                                running = [item[1] for item in queue.get("queue_running") or [] if len(item) > 1]
+                                pending = [item[1] for item in queue.get("queue_pending") or [] if len(item) > 1]
+                                if prompt_id in running:
+                                    state = "running"
+                                elif prompt_id in pending:
+                                    state = "queued"
+                                    extra["position"] = pending.index(prompt_id) + 1
+                                else:
+                                    state = "waiting"
+                        except Exception as exc:  # noqa: BLE001
+                            extra["poll_error"] = str(exc)[:160]
+                    if state != last:
+                        yield f"data: {json.dumps({'state': state, **extra}, ensure_ascii=False)}\n\n"
+                        last = state
+                    elif state in {"running", "queued", "waiting"} and int(elapsed) % 3 == 0:
+                        yield f"data: {json.dumps({'state': state, **extra}, ensure_ascii=False)}\n\n"
+                    await asyncio.sleep(0.8)
+
+                result = task.result()
+                data = result.to_receipt()
+                data["kind"] = result.kind
+                data["images"] = [self._image_info(path) for path in result.paths]
+                data["state"] = "done" if result.ok else "failed"
+                data["elapsed_total"] = round(time.time() - started, 1)
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+            except asyncio.CancelledError:
+                task.cancel()
+                raise
+            except Exception as exc:  # noqa: BLE001
+                yield f"data: {json.dumps({'state': 'failed', 'error': str(exc)[:300]}, ensure_ascii=False)}\n\n"
+
+        return stream_response(events())
 
     async def file(self):
         plugin = self.plugin

@@ -11,98 +11,237 @@
       <div class="brand">
         <span class="dot"></span>
         <h1>月夜绘影</h1>
-        <span class="sub">tsukiyo_media</span>
-      </div>
-      <div class="status" id="backend-status">
+        <span class="chip" id="chip-ver"></span>
         <span class="chip" id="chip-backend">连接中…</span>
-        <button class="ghost" id="btn-refresh" title="刷新状态">刷新</button>
+      </div>
+      <div class="actions">
+        <button class="ghost only-settings" id="btn-save">保存全部</button>
+        <button class="ghost only-settings" id="btn-test">测试连接</button>
+        <button class="ghost only-generate" id="btn-refresh">刷新状态</button>
       </div>
     </header>
 
     <nav class="tabs" id="tabs">
-      <a data-view="studio" class="active">生成</a>
-      <a data-view="settings">设置</a>
+      <button class="tab active" data-tab="generate">生成</button>
+      <button class="tab" data-tab="settings">设置</button>
     </nav>
 
+    <p class="status" id="status"></p>
     <div class="banner" id="banner" hidden></div>
 
-    <main class="layout">
-      <section class="panel form-panel">
-        <div class="row">
-          <label>链路</label>
-          <select id="kind">
-            <option value="auto">自动判断</option>
-            <option value="text2img">文生图</option>
-            <option value="selfie">自拍（人设参考图）</option>
-            <option value="reference">参考图生图</option>
-            <option value="edit">编辑 / 改图</option>
-          </select>
-        </div>
-
-        <div class="row">
-          <label>模型</label>
-          <select id="model"></select>
-          <span class="hint" id="model-hint">仅文生图生效</span>
-        </div>
-
-        <div class="row column">
-          <label>画面描述（英文 tag 效果最好）</label>
-          <textarea id="prompt" rows="6" placeholder="1girl, beach, sunset, walking, smiling"></textarea>
-        </div>
-
-        <div class="row" id="reference-row">
-          <label>参考图</label>
-          <input id="reference" type="file" accept="image/png,image/jpeg,image/webp" />
-          <span class="hint" id="reference-hint">参考图/编辑必须上传</span>
-        </div>
-        <div class="ref-preview" id="ref-preview" hidden></div>
-
-        <details class="advanced">
-          <summary>高级参数</summary>
+    <!-- ==================== 生成 ==================== -->
+    <section id="panel-generate">
+      <main class="layout">
+        <section class="panel">
           <div class="row">
-            <label>尺寸</label>
-            <input id="width" type="number" min="0" step="64" placeholder="工作流默认" />
-            <span class="times">×</span>
-            <input id="height" type="number" min="0" step="64" placeholder="工作流默认" />
+            <label for="kind">链路</label>
+            <select id="kind">
+              <option value="auto">自动判断</option>
+              <option value="text2img">文生图</option>
+              <option value="selfie">自拍（人设参考图）</option>
+              <option value="reference">参考图生图</option>
+              <option value="edit">编辑 / 改图</option>
+            </select>
           </div>
+
           <div class="row">
-            <label>种子</label>
-            <input id="seed" type="number" value="-1" />
-            <span class="hint">-1 = 随机</span>
+            <label for="model">模型</label>
+            <select id="model"></select>
+            <span class="hint" id="model-hint"></span>
           </div>
+
           <div class="row column">
-            <label>额外负向词</label>
-            <textarea id="negative" rows="2" placeholder="lowres, bad anatomy"></textarea>
+            <label for="prompt">画面描述（英文 tag 效果最好）</label>
+            <textarea id="prompt" rows="6" placeholder="1girl, beach, sunset, walking, smiling"></textarea>
           </div>
-        </details>
 
-        <div class="actions">
-          <button id="btn-generate" class="primary">生成</button>
-          <span class="hint" id="gen-hint"></span>
+          <div class="row" id="reference-row" hidden>
+            <label for="reference">参考图</label>
+            <input id="reference" type="file" accept="image/png,image/jpeg,image/webp" />
+            <span class="hint" id="reference-hint">这个链路必须上传一张图</span>
+          </div>
+          <div class="ref-preview" id="ref-preview" hidden></div>
+
+          <details class="advanced">
+            <summary>高级参数</summary>
+            <div class="row">
+              <label for="width">尺寸</label>
+              <input id="width" type="number" min="0" step="64" placeholder="工作流默认" />
+              <span>×</span>
+              <input id="height" type="number" min="0" step="64" placeholder="工作流默认" />
+            </div>
+            <div class="row">
+              <label for="seed">种子</label>
+              <input id="seed" type="number" value="-1" />
+              <span class="hint">-1 = 随机</span>
+            </div>
+            <div class="row column">
+              <label for="negative">额外负向词</label>
+              <textarea id="negative" rows="2" placeholder="lowres, bad anatomy"></textarea>
+            </div>
+          </details>
+
+          <div class="actions">
+            <button id="btn-generate" class="primary">生成</button>
+            <span class="hint" id="gen-hint"></span>
+          </div>
+          <div class="progress" id="progress" hidden>
+            <div class="progress-bar"><span id="progress-fill"></span></div>
+            <span class="hint" id="progress-text"></span>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="result-head">
+            <h2>结果</h2>
+            <span class="meta" id="result-meta"></span>
+          </div>
+          <div class="preview" id="preview"><div class="empty">还没有生成</div></div>
+          <details class="prompt-detail" id="prompt-detail" hidden>
+            <summary>实际提交的提示词</summary>
+            <pre id="prompt-final"></pre>
+          </details>
+        </section>
+      </main>
+
+      <section class="panel history">
+        <div class="history-head">
+          <h2>最近生成</h2>
+          <button class="ghost" id="btn-history">刷新</button>
+        </div>
+        <div class="grid" id="history-grid"></div>
+      </section>
+    </section>
+
+    <!-- ==================== 设置 ==================== -->
+    <section id="panel-settings" hidden>
+      <section class="panel">
+        <h2>先搞清楚三件事</h2>
+        <p class="hint">
+          <b>后端</b>：目前只支持<b>本地 ComfyUI</b>（HTTP API），在线 API 在路线图里。<br />
+          <b>模型</b>：<code>models.json</code> 的一条，决定「工作流 + 作者参数（steps/cfg/采样器/尺寸）」。<br />
+          <b>工作流</b>：<code>workflows/</code> 下的 ComfyUI <b>API 格式</b> JSON（ComfyUI 里「导出 (API)」得到）。
+        </p>
+        <div class="paths">
+          <div><span class="hint">工作流目录</span><code id="p-wf"></code><button class="ghost" data-copy="p-wf">复制</button></div>
+          <div><span class="hint">模型文件</span><code id="p-models"></code><button class="ghost" data-copy="p-models">复制</button></div>
+          <div><span class="hint">插件目录（宿主）</span><code id="p-host"></code><button class="ghost" data-copy="p-host">复制</button></div>
         </div>
       </section>
 
-      <section class="panel result-panel">
-        <div class="result-head">
-          <h2>结果</h2>
-          <span class="meta" id="result-meta"></span>
-        </div>
-        <div class="preview" id="preview">
-          <div class="empty">还没有生成</div>
-        </div>
-        <details class="prompt-detail" id="prompt-detail" hidden>
-          <summary>实际提交的提示词</summary>
-          <pre id="prompt-final"></pre>
-        </details>
+      <section class="panel">
+        <h2>自检</h2>
+        <ul class="diag" id="diag"><li class="hint">读取中…</li></ul>
       </section>
-    </main>
 
-    <section class="history">
-      <div class="history-head">
-        <h2>最近生成</h2>
-        <button class="ghost" id="btn-history">刷新</button>
-      </div>
-      <div class="grid" id="history-grid"></div>
+      <section class="panel">
+        <h2>后端连接</h2>
+        <div class="grid2">
+          <label>ComfyUI 地址<input data-cfg="comfyui.base_url" placeholder="http://host.docker.internal:8188" /></label>
+          <label>连接超时(s)<input type="number" data-cfg="comfyui.connect_timeout_seconds" /></label>
+          <label>出图超时(s)<input type="number" data-cfg="comfyui.job_timeout_seconds" /></label>
+          <label>轮询间隔(s)<input type="number" step="0.1" data-cfg="comfyui.poll_interval_seconds" /></label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>生成默认</h2>
+        <label>全局负向词<textarea rows="3" data-cfg="generation.negative_prompt"></textarea></label>
+        <div class="grid2">
+          <label>与作者词拼接
+            <select data-cfg="generation.prompt_mode">
+              <option value="append">append（保留作者词，推荐）</option>
+              <option value="replace">replace（覆盖作者词）</option>
+            </select>
+          </label>
+          <label>文件名前缀<input data-cfg="generation.filename_prefix" /></label>
+          <label>并发上限<input type="number" data-cfg="generation.max_concurrent" /></label>
+          <label class="check"><input type="checkbox" data-cfg="generation.strip_non_english" /> 丢弃含中文的子句</label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>三档工作流</h2>
+        <div class="grid3">
+          <fieldset>
+            <legend>自拍</legend>
+            <label>工作流<select data-cfg="selfie.workflow" data-wf></select></label>
+            <label>人设特征词<textarea rows="3" data-cfg="selfie.identity_prompt"></textarea></label>
+            <label>固定构图词<input data-cfg="selfie.fixed_prompt" /></label>
+            <label>人设参考图<input data-cfg="selfie.reference_image" /></label>
+            <div class="grid3">
+              <label>IPA<input type="number" step="0.05" data-cfg="selfie.ipadapter_weight" /></label>
+              <label>宽<input type="number" step="64" data-cfg="selfie.width" /></label>
+              <label>高<input type="number" step="64" data-cfg="selfie.height" /></label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>参考图</legend>
+            <label>工作流<select data-cfg="reference.workflow" data-wf></select></label>
+            <label>固定追加词<input data-cfg="reference.fixed_prompt" /></label>
+            <div class="grid3">
+              <label>IPA<input type="number" step="0.05" data-cfg="reference.ipadapter_weight" /></label>
+              <label>宽<input type="number" step="64" data-cfg="reference.width" /></label>
+              <label>高<input type="number" step="64" data-cfg="reference.height" /></label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>编辑</legend>
+            <label>工作流<select data-cfg="edit.workflow" data-wf></select></label>
+            <label>固定追加词<input data-cfg="edit.fixed_prompt" /></label>
+            <div class="grid3">
+              <label>重绘<input type="number" step="0.05" data-cfg="edit.denoise" /></label>
+              <label>宽<input type="number" step="64" data-cfg="edit.width" /></label>
+              <label>高<input type="number" step="64" data-cfg="edit.height" /></label>
+            </div>
+          </fieldset>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>路径</h2>
+        <div class="grid2">
+          <label>工作流目录<input data-cfg="paths.workflow_dir" /></label>
+          <label>出图目录<input data-cfg="paths.output_dir" placeholder="留空 = 插件数据目录 output/" /></label>
+          <label>宿主机 data 目录<input data-cfg="paths.host_data_dir" placeholder="D:\dafeiyu\xiaofeiyu-docker\data" /></label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>模型表</h2>
+          <button class="ghost" id="btn-add-model">＋ 新增模型</button>
+        </div>
+        <p class="hint">一行一个模型；key 建好后不可改。停用的模型不出现在生成页，也不会被自动选模命中。</p>
+        <div class="table-wrap">
+          <table class="models">
+            <thead>
+              <tr>
+                <th>启用</th><th>默认</th><th>key</th><th>名称</th><th>工作流</th>
+                <th>steps</th><th>cfg</th><th>宽</th><th>高</th><th>采样器</th><th>调度器</th>
+                <th>别名</th><th>标签</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="models-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>工作流文件</h2>
+          <input type="file" id="wf-file" accept="application/json,.json" hidden />
+          <button class="ghost" id="btn-upload-wf">上传工作流 JSON</button>
+          <label class="check"><input type="checkbox" id="wf-overwrite" /> 已存在时覆盖</label>
+        </div>
+        <p class="hint">要求 ComfyUI 的 <b>API 格式</b>（节点id → {class_type, inputs}）。「说明」存在插件数据目录，不改工作流文件。</p>
+        <div class="table-wrap">
+          <table class="models">
+            <thead><tr><th>文件</th><th>说明</th><th>被哪些模型使用</th><th>用于档位</th></tr></thead>
+            <tbody id="wf-body"></tbody>
+          </table>
+        </div>
+      </section>
     </section>
 
     <script type="module" src="./app.js"></script>
