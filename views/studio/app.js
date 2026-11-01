@@ -63,7 +63,7 @@ async function loadStatus() {
 function renderModels(models, fallback) {
   defaultModel = fallback || defaultModel;
   ui.model.innerHTML = "";
-  for (const item of models) {
+  for (const item of models.filter((m) => m.enabled !== false)) {
     const option = document.createElement("option");
     option.value = item.key;
     option.textContent = `${item.label}${item.is_default ? "（默认）" : ""}`;
@@ -86,7 +86,11 @@ function syncModelHint() {
       ? "文生图按此模型出图"
       : "该链路用配置里的工作流，模型下拉不生效";
   const needsRef = ui.kind.value === "reference" || ui.kind.value === "edit";
-  ui.referenceHint.textContent = needsRef ? "这个链路必须上传一张图" : "自拍/文生图不需要参考图";
+  const row = document.getElementById("reference-row");
+  const preview = document.getElementById("ref-preview");
+  if (row) row.hidden = !needsRef;
+  if (preview && !needsRef) preview.hidden = true;
+  ui.referenceHint.textContent = needsRef ? "这个链路必须上传一张图" : "";
 }
 
 function showImage(image) {

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>月夜绘影 · 设置</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <h1>月夜绘影 <span class="sub">设置</span></h1>
+        <span class="chip" id="ver"></span>
+      </div>
+      <div class="actions">
+        <button class="ghost" id="btn-test">测试连接</button>
+        <button class="primary" id="btn-save">保存全部</button>
+      </div>
+    </header>
+    <p class="hint" id="status"></p>
+
+    <main class="grid">
+      <section class="panel">
+        <h2>后端连接</h2>
+        <label>ComfyUI 地址 <input data-cfg="comfyui.base_url" placeholder="http://host.docker.internal:8188" /></label>
+        <div class="two">
+          <label>连接超时(s) <input type="number" data-cfg="comfyui.connect_timeout_seconds" /></label>
+          <label>出图超时(s) <input type="number" data-cfg="comfyui.job_timeout_seconds" /></label>
+        </div>
+        <label>轮询间隔(s) <input type="number" step="0.1" data-cfg="comfyui.poll_interval_seconds" /></label>
+      </section>
+
+      <section class="panel">
+        <h2>生成默认</h2>
+        <label>全局负向词 <textarea rows="3" data-cfg="generation.negative_prompt"></textarea></label>
+        <div class="two">
+          <label>与作者词拼接
+            <select data-cfg="generation.prompt_mode">
+              <option value="append">append（保留作者词）</option>
+              <option value="replace">replace（覆盖作者词）</option>
+            </select>
+          </label>
+          <label>文件名前缀 <input data-cfg="generation.filename_prefix" /></label>
+        </div>
+        <div class="two">
+          <label>并发上限 <input type="number" data-cfg="generation.max_concurrent" /></label>
+          <label class="check"><input type="checkbox" data-cfg="generation.strip_non_english" /> 丢弃中文子句</label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>自拍</h2>
+        <label>工作流 <select data-cfg="selfie.workflow" data-wf></select></label>
+        <label>人设特征词 <textarea rows="3" data-cfg="selfie.identity_prompt"></textarea></label>
+        <label>固定构图词 <input data-cfg="selfie.fixed_prompt" /></label>
+        <label>人设参考图路径 <input data-cfg="selfie.reference_image" placeholder="/AstrBot/data/plugin_data/.../reference.png" /></label>
+        <div class="three">
+          <label>IPA 权重 <input type="number" step="0.05" data-cfg="selfie.ipadapter_weight" /></label>
+          <label>宽 <input type="number" step="64" data-cfg="selfie.width" /></label>
+          <label>高 <input type="number" step="64" data-cfg="selfie.height" /></label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>参考图</h2>
+        <label>工作流 <select data-cfg="reference.workflow" data-wf></select></label>
+        <label>固定追加词 <input data-cfg="reference.fixed_prompt" /></label>
+        <div class="three">
+          <label>IPA 权重 <input type="number" step="0.05" data-cfg="reference.ipadapter_weight" /></label>
+          <label>宽 <input type="number" step="64" data-cfg="reference.width" /></label>
+          <label>高 <input type="number" step="64" data-cfg="reference.height" /></label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>编辑</h2>
+        <label>工作流 <select data-cfg="edit.workflow" data-wf></select></label>
+        <label>固定追加词 <input data-cfg="edit.fixed_prompt" /></label>
+        <div class="three">
+          <label>重绘强度 <input type="number" step="0.05" data-cfg="edit.denoise" /></label>
+          <label>宽 <input type="number" step="64" data-cfg="edit.width" /></label>
+          <label>高 <input type="number" step="64" data-cfg="edit.height" /></label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>路径</h2>
+        <label>工作流目录 <input data-cfg="paths.workflow_dir" /></label>
+        <label>出图目录 <input data-cfg="paths.output_dir" placeholder="留空=插件数据目录 output/" /></label>
+        <label>宿主机 data 目录 <input data-cfg="paths.host_data_dir" placeholder="D:\dafeiyu\xiaofeiyu-docker\data" /></label>
+        <div class="pathinfo">
+          <div><span class="hint">容器内工作流路径</span><code id="p-wf"></code><button class="ghost" data-copy="p-wf">复制</button></div>
+          <div><span class="hint">宿主机工作流路径</span><code id="p-host"></code><button class="ghost" data-copy="p-host">复制</button></div>
+        </div>
+      </section>
+
+      <section class="panel panel-wide">
+        <h2>模型</h2>
+        <p class="hint">停用的模型不会出现在生成页，也不会被自动选模命中。</p>
+        <table class="models">
+          <thead>
+            <tr><th>启用</th><th>默认</th><th>key</th><th>名称</th><th>工作流</th></tr>
+          </thead>
+          <tbody id="models-body"></tbody>
+        </table>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

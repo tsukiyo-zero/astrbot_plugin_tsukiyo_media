@@ -20,6 +20,7 @@ from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.message_components import Image
 from astrbot.api.star import Context, Star, StarTools, register
 
+from . import __version__
 from .api import TsukiyoMediaAPI
 from .backends.comfyui.client import ComfyUIClient
 from .core.catalog import ModelCatalog
@@ -48,7 +49,7 @@ _GROUP_BLOCK_HINTS = ("nude", "naked", "topless", "裸", "脱光", "全裸")
     "tsukiyo_media",
     "Mio (tsukiyo-zero)",
     "低耦合生成插件：本地 ComfyUI / 在线 API，文生图·自拍·参考图·编辑，预留视频",
-    "0.2.1",
+    "0.3.0",
 )
 class TsukiyoMediaPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
@@ -57,6 +58,7 @@ class TsukiyoMediaPlugin(Star):
         self.data_dir = Path(StarTools.get_data_dir(PLUGIN_NAME))
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.root = Path(__file__).resolve().parent
+        self._version = __version__
         self.reference_dir = self.data_dir / "references"
         self.reference_dir.mkdir(parents=True, exist_ok=True)
 
@@ -430,6 +432,42 @@ class TsukiyoMediaPlugin(Star):
     async def terminate(self) -> None:
         if self.client is not None:
             await self.client.close()
+
+    # ------------------------------------------------------------------ 配置热更新
+    async def apply_patch(self, patch: dict[str, Any]) -> None:
+        """深合并配置 → 落盘 → 重建运行时（不重启 AstrBot）。
+
+        设置页保存走这里；失败时抛异常，让前端看到原因。
+        """
+        if not isinstance(patch, dict) or not patch:
+            return
+        old_client = self.client
+        _deep_update(self.config, patch)
+
+        saver = getattr(self.config, "save_config_async", None)
+        if callable(saver):
+            await saver()
+        else:
+            sync_saver = getattr(self.config, "save_config", None)
+            if callable(sync_saver):
+                sync_saver()
+
+        self._init_runtime()
+        if old_client is not None and old_client is not self.client:
+            try:
+                await old_client.close()
+            except Exception:  # pragma: no cover
+                pass
+        logger.info("[TsukiyoMedia] 配置已更新并重建运行时")
+
+
+def _deep_update(target: dict, patch: dict) -> None:
+    """递归合并：只覆盖 patch 里出现的键，其余保持原值。"""
+    for key, value in patch.items():
+        if isinstance(value, dict) and isinstance(target.get(key), dict):
+            _deep_update(target[key], value)
+        else:
+            target[key] = value
 
 
 def _dim(size: str | None, index: int) -> int:

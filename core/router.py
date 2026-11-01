@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 
 from .catalog import ModelCatalog, ModelEntry
+from .errors import RoutingError
 from .types import (
     KIND_AUTO,
     KIND_EDIT,
@@ -68,6 +69,10 @@ def select_model(
     if explicit:
         return catalog.get(explicit), "explicit"
     for pattern, key in _STYLE_HINTS:
-        if key in catalog.keys() and pattern.search(prompt or ""):
+        if not pattern.search(prompt or ""):
+            continue
+        try:
             return catalog.get(key), f"style:{pattern.pattern[:24]}"
-    return catalog.get(catalog.default_key), "default"
+        except RoutingError:
+            continue  # 该风格对应模型被停用，继续往下匹配
+    return catalog.get(""), "default"

@@ -21,6 +21,7 @@ class ModelEntry:
     aliases: tuple[str, ...] = ()
     tags: tuple[str, ...] = ()
     allow_override: bool = False
+    enabled: bool = True
 
     def matches(self, text: str) -> bool:
         needle = str(text or "").strip().casefold()
@@ -64,6 +65,7 @@ class ModelCatalog:
                 aliases=tuple(str(a) for a in (item.get("aliases") or ())),
                 tags=tuple(str(t) for t in (item.get("tags") or ())),
                 allow_override=bool(item.get("allow_override", False)),
+                enabled=bool(item.get("enabled", True)),
             )
         if not models:
             raise ConfigError("模型目录为空")
@@ -97,16 +99,32 @@ class ModelCatalog:
     def items(self) -> list[ModelEntry]:
         return list(self._models.values())
 
-    def get(self, key_or_alias: str) -> ModelEntry:
+    def enabled_items(self) -> list[ModelEntry]:
+        return [entry for entry in self._models.values() if entry.enabled]
+
+    def enabled_keys(self) -> list[str]:
+        return [entry.key for entry in self._models.values() if entry.enabled]
+
+    def get(self, key_or_alias: str, *, allow_disabled: bool = False) -> ModelEntry:
         text = str(key_or_alias or "").strip()
         if not text:
-            return self._models[self._default]
+            entry = self._models[self._default]
+            return entry if (entry.enabled or allow_disabled) else self._first_enabled()
         if text in self._models:
-            return self._models[text]
+            entry = self._models[text]
+        else:
+            entry = next((item for item in self._models.values() if item.matches(text)), None)
+            if entry is None:
+                raise RoutingError(f"未知绘图模型：{text}（可用：{', '.join(self.enabled_keys())}）")
+        if not entry.enabled and not allow_disabled:
+            raise RoutingError(f"模型已停用：{entry.key}（去设置页启用）")
+        return entry
+
+    def _first_enabled(self) -> ModelEntry:
         for entry in self._models.values():
-            if entry.matches(text):
+            if entry.enabled:
                 return entry
-        raise RoutingError(f"未知绘图模型：{text}（可用：{', '.join(self.keys())}）")
+        raise RoutingError("所有模型都被停用了，请到设置页启用至少一个")
 
     def find(self, text: str) -> ModelEntry | None:
         try:
@@ -120,5 +138,6 @@ class ModelCatalog:
             alias = f" / {', '.join(entry.aliases)}" if entry.aliases else ""
             tag = f"［{', '.join(entry.tags)}］" if entry.tags else ""
             star = "*" if entry.key == self._default else " "
-            lines.append(f"{star} {entry.key}{alias} — {entry.label}{tag}")
+            off = "（停用）" if not entry.enabled else ""
+            lines.append(f"{star} {entry.key}{alias} — {entry.label}{tag}{off}")
         return "\n".join(lines)

@@ -26,6 +26,7 @@ class TsukiyoMediaAPI:
                 "aliases": list(entry.aliases),
                 "tags": list(entry.tags),
                 "workflow": entry.workflow,
+                "enabled": entry.enabled,
                 "is_default": entry.key == self._catalog.default_key,
             }
             for entry in self._catalog.items()

@@ -54,6 +54,12 @@
         "description": "出图保存目录",
         "hint": "留空保存到插件数据目录 output/",
         "default": ""
+      },
+      "host_data_dir": {
+        "type": "string",
+        "description": "宿主机 data 目录（可选）",
+        "hint": "填写后，设置页会显示工作流目录的宿主路径，方便在资源管理器里直接打开；如 D:\\\\dafeiyu\\\\xiaofeiyu-docker\\\\data",
+        "default": ""
       }
     }
   },

@@ -5,6 +5,7 @@ AstrBot 的插件视图通过 bridge 调用这些接口，路由前缀固定为 
 from __future__ import annotations
 
 import base64
+import json
 import mimetypes
 import time
 from pathlib import Path
@@ -15,6 +16,17 @@ from astrbot.api import logger
 from .core.types import ImageRequest, normalize_kind
 
 PLUGIN_NAME = "astrbot_plugin_tsukiyo_media"
+
+#: 设置页允许写入的配置字段（其余一律忽略，避免误改）
+CONFIG_WHITELIST: dict[str, set[str]] = {
+    "comfyui": {"base_url", "connect_timeout_seconds", "job_timeout_seconds", "poll_interval_seconds"},
+    "generation": {"negative_prompt", "prompt_mode", "strip_non_english", "max_concurrent", "filename_prefix"},
+    "paths": {"workflow_dir", "output_dir", "host_data_dir"},
+    "selfie": {"workflow", "fixed_prompt", "identity_prompt", "reference_image", "ipadapter_weight", "width", "height"},
+    "reference": {"workflow", "fixed_prompt", "ipadapter_weight", "width", "height"},
+    "edit": {"workflow", "fixed_prompt", "denoise", "width", "height"},
+    "delivery": {"allow_private", "allow_group", "group_block_nsfw"},
+}
 
 try:  # AstrBot >= 4.16 提供 astrbot.api.web
     from astrbot.api.web import error_response, file_response, json_response, request
@@ -47,6 +59,11 @@ class PageAPI:
             ("/upload", self.upload, ["POST"], "上传参考图"),
             ("/history", self.history, ["GET"], "最近生成记录"),
             ("/file", self.file, ["GET"], "读取生成产物"),
+            ("/settings", self.settings, ["GET"], "读取设置"),
+            ("/settings", self.save_settings, ["POST"], "保存设置"),
+            ("/models", self.save_models, ["POST"], "保存模型开关/默认/工作流"),
+            ("/workflows", self.workflows, ["GET"], "工作流文件列表"),
+            ("/test", self.test_backend, ["POST"], "测试后端连接"),
         )
         for path, handler, methods, desc in routes:
             register(f"/{PLUGIN_NAME}{path}", handler, methods, desc)
@@ -186,6 +203,170 @@ class PageAPI:
             return error_response("文件不存在", status_code=404)
         content_type = mimetypes.guess_type(target.name)[0] or "image/png"
         return file_response(target, filename=target.name, content_type=content_type)
+
+    # ------------------------------------------------------------------ 设置
+    async def settings(self):
+        return json_response(self._settings_payload())
+
+    async def save_settings(self):
+        payload = await request.json(default={})
+        patch = payload.get("config") if isinstance(payload, dict) else None
+        if not isinstance(patch, dict) or not patch:
+            return error_response("config 不能为空", status_code=400)
+        filtered = self._filter_config(patch)
+        if not filtered:
+            return error_response("没有可保存的字段", status_code=400)
+        try:
+            await self.plugin.apply_patch(filtered)
+        except Exception as exc:  # noqa: BLE001
+            return error_response(f"保存失败：{exc}", status_code=500)
+        return json_response(self._settings_payload())
+
+    async def save_models(self):
+        payload = await request.json(default={})
+        if not isinstance(payload, dict):
+            return error_response("payload 必须是对象", status_code=400)
+        catalog_path = Path(self.plugin.catalog.path)
+        try:
+            raw = json.loads(catalog_path.read_text(encoding="utf-8"))
+        except Exception as exc:  # noqa: BLE001
+            return error_response(f"读取 models.json 失败：{exc}", status_code=500)
+        models = raw.get("models") or {}
+        patch = payload.get("models") or {}
+        if isinstance(patch, dict):
+            for key, item in patch.items():
+                if key not in models or not isinstance(item, dict):
+                    continue
+                if "enabled" in item:
+                    models[key]["enabled"] = bool(item["enabled"])
+                if "workflow" in item:
+                    workflow = str(item["workflow"] or "").strip()
+                    if workflow:
+                        models[key]["workflow"] = workflow
+        default = str(payload.get("default") or "").strip()
+        if default:
+            if default not in models:
+                return error_response(f"未知模型：{default}", status_code=400)
+            raw["default"] = default
+        raw["models"] = models
+        try:
+            tmp = catalog_path.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(raw, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            tmp.replace(catalog_path)
+            self.plugin.catalog.load()
+        except Exception as exc:  # noqa: BLE001
+            return error_response(f"写入 models.json 失败：{exc}", status_code=500)
+        return json_response(self._settings_payload())
+
+    async def workflows(self):
+        try:
+            files = self._workflow_files()
+        except Exception as exc:  # noqa: BLE001
+            return error_response(str(exc), status_code=500)
+        return json_response({"ok": True, "items": files})
+
+    async def test_backend(self):
+        try:
+            stats = await self.plugin.client.system_stats()
+            queue = await self.plugin.client.queue_state()
+        except Exception as exc:  # noqa: BLE001
+            return json_response({"ok": False, "error": str(exc)[:300]})
+        device = (stats.get("devices") or [{}])[0]
+        return json_response(
+            {
+                "ok": True,
+                "version": (stats.get("system") or {}).get("comfyui_version", ""),
+                "vram_total_gb": round(float(device.get("vram_total") or 0) / (1024**3), 1),
+                "vram_free_gb": round(float(device.get("vram_free") or 0) / (1024**3), 1),
+                "running": len(queue.get("queue_running") or ()),
+                "pending": len(queue.get("queue_pending") or ()),
+            }
+        )
+
+    # ------------------------------------------------------------------ 设置辅助
+    def _settings_payload(self) -> dict[str, Any]:
+        plugin = self.plugin
+        cfg = plugin.config if isinstance(plugin.config, dict) else {}
+        workflow_dir = plugin.pipeline.workflow_dir if plugin.pipeline else plugin.root / "workflows"
+        return {
+            "ok": True,
+            "version": getattr(plugin, "_version", ""),
+            "config": {
+                section: {k: (cfg.get(section) or {}).get(k) for k in keys}
+                for section, keys in CONFIG_WHITELIST.items()
+            },
+            "models": [
+                {
+                    "key": entry.key,
+                    "label": entry.label,
+                    "enabled": entry.enabled,
+                    "workflow": entry.workflow,
+                    "is_default": entry.key == plugin.catalog.default_key,
+                    "tags": list(entry.tags),
+                    "aliases": list(entry.aliases),
+                }
+                for entry in plugin.catalog.items()
+            ],
+            "workflows": self._workflow_files(),
+            "paths": {
+                "workflow_dir": str(workflow_dir),
+                "output_dir": str(plugin.pipeline.output_dir) if plugin.pipeline else "",
+                "models_json": str(plugin.catalog.path),
+                "reference_dir": str(plugin.reference_dir),
+                "host_data_dir": cfg.get("paths", {}).get("host_data_dir", "") if isinstance(cfg.get("paths"), dict) else "",
+                "host_workflow_dir": self._host_path(str(workflow_dir)),
+            },
+        }
+
+    def _workflow_files(self) -> list[str]:
+        workflow_dir = self.plugin.pipeline.workflow_dir if self.plugin.pipeline else self.plugin.root / "workflows"
+        if not workflow_dir.exists():
+            return []
+        return sorted(p.name for p in workflow_dir.iterdir() if p.suffix.lower() == ".json")
+
+    def _host_path(self, container_path: str) -> str:
+        """把容器内路径映射成宿主路径（需要配置 paths.host_data_dir）。"""
+        cfg = self.plugin.config if isinstance(self.plugin.config, dict) else {}
+        paths = cfg.get("paths") if isinstance(cfg.get("paths"), dict) else {}
+        host = str((paths or {}).get("host_data_dir") or "").strip()
+        if not host:
+            return ""
+        prefix = "/AstrBot/data"
+        if container_path.startswith(prefix):
+            return host.rstrip("/\\") + container_path[len(prefix):].replace("/", "\\")
+        return ""
+
+    def _filter_config(self, patch: dict[str, Any]) -> dict[str, Any]:
+        """只放行白名单字段，并按当前值类型做一次转换。"""
+        cfg = self.plugin.config if isinstance(self.plugin.config, dict) else {}
+        out: dict[str, Any] = {}
+        for section, values in patch.items():
+            allowed = CONFIG_WHITELIST.get(section)
+            if not allowed or not isinstance(values, dict):
+                continue
+            current = cfg.get(section) if isinstance(cfg.get(section), dict) else {}
+            clean: dict[str, Any] = {}
+            for key, value in values.items():
+                if key not in allowed:
+                    continue
+                base = current.get(key) if isinstance(current, dict) else None
+                if isinstance(base, bool):
+                    clean[key] = bool(value)
+                elif isinstance(base, int) and not isinstance(base, bool):
+                    try:
+                        clean[key] = int(float(value))
+                    except (TypeError, ValueError):
+                        continue
+                elif isinstance(base, float):
+                    try:
+                        clean[key] = float(value)
+                    except (TypeError, ValueError):
+                        continue
+                else:
+                    clean[key] = str(value)
+            if clean:
+                out[section] = clean
+        return out
 
     # ------------------------------------------------------------------ 工具
     def _image_info(self, path: str) -> dict[str, Any]:

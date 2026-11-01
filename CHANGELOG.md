@@ -2,6 +2,17 @@
 
 遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.3.0] - 2026-11-02
+
+### 新增
+- **设置页** `views/settings`：后端连接（含一键测试）、生成默认参数、自拍/参考图/编辑三档工作流与权重、路径配置（含宿主机路径映射）、模型表
+- 模型可**启用/停用**、可单独指定工作流、可切换默认模型；停用模型不参与选模
+- 保存后**热重建运行时**（`AstrBotConfig.save_config` + 重装 pipeline），不需要重启进程
+- 新 API：`GET/POST /settings`、`POST /models`、`GET /workflows`、`POST /test`
+
+### 修复
+- Studio 在"文生图/自拍"链路上不再显示参考图上传框（只有参考图/编辑才显示）
+
 ## [0.2.1] - 2026-11-02
 
 ### 变更
