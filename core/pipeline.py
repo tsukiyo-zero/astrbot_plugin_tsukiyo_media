@@ -43,6 +43,8 @@ class KindProfile:
     denoise: float | None = None
     width: int = 0
     height: int = 0
+    #: 该链路的默认模型；请求里没显式指定时用它
+    model_key: str = ""
 
 
 @dataclass
@@ -167,17 +169,24 @@ class ImagePipeline:
             raise ConfigError(f"配置里缺少 {kind} 的工作流")
 
         # 自拍 / 参考图 / 编辑：工作流结构固定（带 IP-Adapter 或 img2img），
-        # 但底模与作者参数可以跟着所选模型走；没显式选模型就保持 profile 原样。
+        # 但底模与作者参数可以跟着所选模型走；请求没指定就用该档的默认模型。
         entry = None
-        model_key = str(request.model_key or "").strip()
+        model_key = str(request.model_key or profile.model_key or "").strip()
         if model_key:
-            entry = self.catalog.get(model_key)
-            params = entry.author_params or {}
-            profile = replace(
-                profile,
-                width=int(params.get("width") or profile.width or 0),
-                height=int(params.get("height") or profile.height or 0),
-            )
+            try:
+                entry = self.catalog.get(model_key)
+            except RoutingError:
+                # 默认模型被删/停用时不阻塞出图；显式指定的仍然报错
+                if request.model_key:
+                    raise
+                entry = None
+            if entry is not None:
+                params = entry.author_params or {}
+                profile = replace(
+                    profile,
+                    width=int(params.get("width") or profile.width or 0),
+                    height=int(params.get("height") or profile.height or 0),
+                )
         return kind, entry, profile
 
     def checkpoint_of(self, workflow_name: str) -> str:

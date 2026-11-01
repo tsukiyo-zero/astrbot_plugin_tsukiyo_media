@@ -25,7 +25,7 @@ CONFIG_WHITELIST: dict[str, set[str]] = {
     "comfyui": {"base_url", "connect_timeout_seconds", "job_timeout_seconds", "poll_interval_seconds"},
     "generation": {"negative_prompt", "prompt_mode", "strip_non_english", "max_concurrent", "filename_prefix"},
     "paths": {"workflow_dir", "output_dir", "host_data_dir"},
-    "selfie": {"workflow", "fixed_prompt", "identity_prompt", "reference_image", "ipadapter_weight", "width", "height"},
+    "selfie": {"workflow", "model", "fixed_prompt", "identity_prompt", "reference_image", "ipadapter_weight", "width", "height"},
     "reference": {"workflow", "fixed_prompt", "ipadapter_weight", "width", "height"},
     "edit": {"workflow", "fixed_prompt", "denoise", "width", "height"},
     "delivery": {"allow_private", "allow_group", "group_block_nsfw"},

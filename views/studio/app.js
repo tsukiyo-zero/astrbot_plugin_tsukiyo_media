@@ -696,6 +696,24 @@ function renderDiagnostics(items) {
   }
 }
 
+function fillModelSelects() {
+  for (const select of document.querySelectorAll("select[data-model]")) {
+    const current = select.value;
+    select.innerHTML = "";
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = "（不指定，用工作流自带的）";
+    select.appendChild(none);
+    for (const item of state.models) {
+      const option = document.createElement("option");
+      option.value = item.key;
+      option.textContent = item.label + (item.is_default ? "（默认）" : "");
+      select.appendChild(option);
+    }
+    select.value = current || "";
+  }
+}
+
 function applySettings(data) {
   state.files = data.workflows || [];
   state.notes = data.workflow_notes || {};
@@ -705,6 +723,7 @@ function applySettings(data) {
   state.originalKeys = new Set(state.models.map((m) => String(m.key || "").trim()).filter(Boolean));
   el("chip-ver").textContent = "v" + (data.version || "?");
 
+  fillModelSelects();
   applyConfig(data);
   el("p-wf").textContent = state.paths.workflow_dir || "";
   el("p-models").textContent = state.paths.models_json || "";

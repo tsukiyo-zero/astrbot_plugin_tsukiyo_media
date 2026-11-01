@@ -156,6 +156,7 @@ class TsukiyoMediaPlugin(Star):
             KIND_TEXT2IMG: KindProfile(fixed_prompt=str(text2img.get("fixed_prompt") or "")),
             KIND_SELFIE: KindProfile(
                 workflow=str(selfie.get("workflow") or "selfie-ref.json"),
+                model_key=str(selfie.get("model") or ""),
                 fixed_prompt=str(selfie.get("fixed_prompt") or ""),
                 identity_prompt=str(selfie.get("identity_prompt") or ""),
                 identity_image=selfie_image,
@@ -290,7 +291,7 @@ class TsukiyoMediaPlugin(Star):
         Args:
             prompt(string): 英文逗号分隔的 danbooru 风格 tag；不要写句子、不要写 "Positive prompt:" 之类标签。中文会被 CLIP 忽略。
             kind(string): auto/selfie/edit/reference。角色本人出镜用 selfie；对用户给的图做修改（改成/换成/去掉）用 edit；照用户给的图画新画面用 reference；不含角色的普通画面用 text2img；不确定就填 auto。
-            model_key(string): 仅文生图生效，英文模型 key（可用值见插件模型列表）；留空则按描述自动选。
+            model_key(string): 英文模型 key（可用值见插件模型列表）；文生图留空则按描述自动选，自拍/参考图/编辑留空则用该档配置的默认模型。仅换底模与作者词，不改变链路结构。
             reference_image_path(string): 可选，本地图片绝对路径；通常留空，插件会自动取本轮消息或引用里的图。
             caption(string): 随图发送的一句话；留空则只发图。
             send(boolean): 是否直接把图发到当前会话，默认 true。

@@ -119,6 +119,12 @@
         "description": "工作流文件",
         "default": "selfie-ref.json"
       },
+      "model": {
+        "type": "string",
+        "description": "默认模型（自拍档）",
+        "hint": "留空 = 用工作流自带的底模与作者词；填模型 key 后，聊天/命令/工具没显式指定模型时都用它",
+        "default": ""
+      },
       "reference_image": {
         "type": "string",
         "description": "人设参考图路径",
