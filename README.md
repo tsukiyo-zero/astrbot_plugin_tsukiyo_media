@@ -210,15 +210,17 @@ tests/                      不依赖网络的单元测试
 
 ## Roadmap
 
-- [x] v0.1 文生图 / 自拍 / 参考图 / 编辑 / 自动与手动选模（ComfyUI 后端）
-- [x] v0.2 可视化页面（状态 / 选模 / 生成 / 历史）；工作流去人设化
-- [x] v0.3 设置页（连接 / 默认参数 / 三档工作流 / 路径 / 模型启用与默认）+ 保存热重建
-- [ ] v0.3 抽出 `MediaBackend` 并落地在线 API 后端（`backends/openai_image`）
-- [ ] v0.3 生成历史持久化（重启后 `/img last` 与 Studio 历史仍可用）
-- [ ] v0.4 视频生成（`modality=video`）
-- [ ] v0.4 LLM 辅助选模（`routing.mode=llm`，规则兜底）
-- [ ] v0.5 任务队列与取消、并发上限可视化
-- [ ] v0.6 hires 二次细化、局部重绘（SAM）
+- [x] 文生图 / 自拍 / 参考图 / 编辑 / 自动与手动选模（ComfyUI 后端）
+- [x] 可视化页面（状态 / 选模 / 生成 / 历史）；工作流去人设化
+- [x] 设置页（连接 / 默认参数 / 三档工作流 / 路径 / 模型启用与默认）+ 保存热重建
+- [ ] 抽出 `MediaBackend` 并落地在线 API 后端（`backends/openai_image`）
+- [ ] 生成历史持久化（重启后 `/img last` 与 Studio 历史仍可用）
+- [ ] 视频生成（`modality=video`）
+- [ ] LLM 辅助选模（`routing.mode=llm`，规则兜底）
+- [ ] 任务队列与取消、并发上限可视化
+- [ ] hires 二次细化、局部重绘（SAM）
+
+> 版本号尚未开始使用（内测中统一记 `0.0.0`），以 CHANGELOG 为准。
 
 ## 致谢
 
@@ -232,3 +234,7 @@ tests/                      不依赖网络的单元测试
 ## License
 
 MIT
+
+## 开发
+
+改动一律走特性分支，验证通过再合并 `main`；具体步骤见 [CONTRIBUTING.md](CONTRIBUTING.md)。
