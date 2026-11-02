@@ -704,10 +704,15 @@ class PageAPI:
         return items
 
     def _workflow_files(self) -> list[str]:
+        """递归列出工作流，返回相对路径（如 selfie/miao.json），目录即类型。"""
         workflow_dir = self.plugin.pipeline.workflow_dir if self.plugin.pipeline else self.plugin.root / "workflows"
         if not workflow_dir.exists():
             return []
-        return sorted(p.name for p in workflow_dir.iterdir() if p.suffix.lower() == ".json")
+        return sorted(
+            p.relative_to(workflow_dir).as_posix()
+            for p in workflow_dir.rglob("*.json")
+            if p.is_file()
+        )
 
     def _host_path(self, container_path: str) -> str:
         """把容器内路径映射成宿主路径（需要配置 paths.host_data_dir）。"""

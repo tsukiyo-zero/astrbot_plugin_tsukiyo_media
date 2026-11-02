@@ -168,26 +168,28 @@ class ImagePipeline:
         if not profile.workflow:
             raise ConfigError(f"配置里缺少 {kind} 的工作流")
 
-        # 自拍 / 参考图 / 编辑：工作流结构固定（带 IP-Adapter 或 img2img），
-        # 但底模与作者参数可以跟着所选模型走；请求没指定就用该档的默认模型。
-        entry = None
+        # 自拍 / 参考图 / 编辑：工作流本身即真相——结构、底模、作者词、采样参数都在文件里。
+        # 选模型 = 选文件：<kind>/<model_key>.json，没有就用 <kind>/default.json。
         model_key = str(request.model_key or profile.model_key or "").strip()
-        if model_key:
-            try:
-                entry = self.catalog.get(model_key)
-            except RoutingError:
-                # 默认模型被删/停用时不阻塞出图；显式指定的仍然报错
-                if request.model_key:
-                    raise
-                entry = None
-            if entry is not None:
-                params = entry.author_params or {}
-                profile = replace(
-                    profile,
-                    width=int(params.get("width") or profile.width or 0),
-                    height=int(params.get("height") or profile.height or 0),
-                )
-        return kind, entry, profile
+        workflow = self.chain_workflow(kind, model_key, profile.workflow)
+        profile = replace(
+            profile,
+            workflow=workflow,
+            width=0,
+            height=0,
+            ipadapter_weight=None,
+            denoise=None,
+        )
+        return kind, None, profile
+
+    def chain_workflow(self, kind: str, model_key: str, fallback: str) -> str:
+        """按「目录 + 模型名」找链路工作流；找不到用 fallback（通常是 <kind>/default.json）。"""
+        name = str(model_key or "").strip()
+        if name and "/" not in name and "\\" not in name and name not in {".", ".."}:
+            relative = f"{kind}/{name}.json"
+            if (self.workflow_dir / relative).exists():
+                return relative
+        return fallback
 
     def checkpoint_of(self, workflow_name: str) -> str:
         """读某个工作流用的底模文件名；读不到就返回空（保持专用工作流原样）。"""
