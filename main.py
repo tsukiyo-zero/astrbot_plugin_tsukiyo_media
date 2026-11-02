@@ -11,14 +11,15 @@ import json
 import re
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import httpx
 
 from astrbot.api import AstrBotConfig, logger
 from astrbot.api.event import AstrMessageEvent, filter
-from astrbot.api.message_components import Image
+from astrbot.api.message_components import Image, Plain
 from astrbot.api.star import Context, Star, StarTools, register
+from astrbot.core.message.message_event_result import MessageChain
 
 from . import __version__
 from .api import TsukiyoMediaAPI
@@ -76,6 +77,43 @@ class TsukiyoMediaPlugin(Star):
             self.page_api.register(context)
         except Exception as exc:  # pragma: no cover - 老版本或权限问题不影响主功能
             logger.warning("[TsukiyoMedia] 插件页面注册失败：%s", exc)
+        self._dump_tool_schema()
+
+    def _dump_tool_schema(self) -> None:
+        """临时诊断：打印 AstrBot 为生图工具生成的 schema。"""
+        try:
+            import json as _json
+
+            from astrbot.core.star.star_handler import star_handlers_registry
+
+            for handler in star_handlers_registry:
+                if "tsukiyo_image_generate" not in str(getattr(handler, "handler_full_name", "")):
+                    continue
+                attrs = [a for a in dir(handler) if not a.startswith("_")]
+                logger.info("[TsukiyoMedia][schema] handler attrs=%s", attrs)
+                logger.info(
+                    "[TsukiyoMedia][schema] extras=%s desc=%s",
+                    _json.dumps(
+                        getattr(handler, "extras_configs", None), ensure_ascii=False, default=str
+                    )[:1500],
+                    str(getattr(handler, "desc", ""))[:300],
+                )
+                for attr in ("func_tool", "tool", "llm_tool"):
+                    tool = getattr(handler, attr, None)
+                    if tool is None:
+                        continue
+                    logger.info(
+                        "[TsukiyoMedia][schema] %s name=%s desc=%s params=%s",
+                        attr,
+                        getattr(tool, "name", ""),
+                        str(getattr(tool, "description", ""))[:120],
+                        _json.dumps(
+                            getattr(tool, "parameters", None) or getattr(tool, "schema", None),
+                            ensure_ascii=False,
+                        )[:1200],
+                    )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("[TsukiyoMedia][schema] dump failed: %s", exc)
 
     def _log_registered_commands(self) -> None:
         """启动自检：确认本插件的命令/别名真的注册上了（过滤器是 AND 关系，叠多个会失效）。"""
@@ -183,6 +221,36 @@ class TsukiyoMediaPlugin(Star):
         candidate = Path(str(value)).expanduser()
         return candidate if candidate.is_absolute() else (self.root / candidate).resolve()
 
+    # ------------------------------------------------------------------ 兜底
+    _SELFIE_RE = re.compile(
+        r"(来|发|给|拍|要|看)(一|两)?张?(自拍|照片|照)|自拍一张|拍张照|拍一张|你的样子"
+    )
+
+    @filter.event_message_type(filter.EventMessageType.ALL)
+    async def auto_selfie_fallback(self, event: AstrMessageEvent) -> None:
+        """模型不肯调工具时的兜底：消息里明确要自拍，就直接出图。
+
+        只在私聊/被 @ 时触发；不处理以命令前缀开头的消息。
+        """
+        text = str(getattr(event, "message_str", "") or "").strip()
+        if not text or text.startswith(("/", "／")):
+            return
+        if not self._SELFIE_RE.search(text):
+            return
+        if self.pipeline is None:
+            return
+        private = bool(getattr(event, "is_private_chat", lambda: True)())
+        if not private and not bool(getattr(event, "is_at_or_wake_command", False)):
+            return
+        try:
+            request = ImageRequest(prompt="", kind=KIND_SELFIE, source="fallback")
+            result = await self._generate(request)
+            await self._send_result(event, result, "")
+        except Exception as exc:  # noqa: BLE001 - 兜底失败不影响主流程
+            logger.warning("[TsukiyoMedia] 自拍兜底失败：%s", exc)
+            return
+        event.stop_event()
+
     @staticmethod
     def _opt_float(value: Any) -> float | None:
         try:
@@ -279,44 +347,33 @@ class TsukiyoMediaPlugin(Star):
         self,
         event: AstrMessageEvent,
         prompt: str,
-        kind: str = "auto",
-        model_key: str = "",
-        reference_image_path: str = "",
-        caption: str = "",
-        send: bool = True,
+        kind: Optional[str] = None,
+        model_key: Optional[str] = None,
+        caption: Optional[str] = None,
     ) -> str:
-        """用本地 ComfyUI 生成图片（文生图 / 自拍 / 编辑 / 参考图重绘）。
+        """生成一张图并发到当前会话。用户说“来张自拍”“发张照片”“画一张…”“把这张改成…”时必须调用这个工具，不要只用文字回复。
 
         Args:
-            prompt(string): 英文逗号分隔的 danbooru 风格 tag；不要写句子、不要写 "Positive prompt:" 之类标签。中文会被 CLIP 忽略。
-            kind(string): auto/selfie/edit/reference。角色本人出镜用 selfie；对用户给的图做修改（改成/换成/去掉）用 edit；照用户给的图画新画面用 reference；不含角色的普通画面用 text2img；不确定就填 auto。
-            model_key(string): 英文模型 key（可用值见插件模型列表）；文生图留空则按描述自动选，自拍/参考图/编辑留空则用该档配置的默认模型。仅换底模与作者词，不改变链路结构。
-            reference_image_path(string): 可选，本地图片绝对路径；通常留空，插件会自动取本轮消息或引用里的图。
-            caption(string): 随图发送的一句话；留空则只发图。
-            send(boolean): 是否直接把图发到当前会话，默认 true。
+            prompt(string): 画面描述，英文逗号分隔的 danbooru 风格 tag（如 1girl, sitting, window, evening）。不要写句子、不要写 "Positive prompt:" 之类标签；中文会被忽略。
+            kind(string, optional): selfie = 你本人出镜（用户想看你的样子、要自拍）；text2img = 画别的画面；edit = 修改用户发来的图（改成/换成/去掉）；reference = 照用户发来的图重画；不确定就省略。
+            model_key(string, optional): 模型 key，通常省略。
+            caption(string, optional): 随图发送的一句话；省略则只发图。
         """
         if self._blocked_reason(event, prompt):
             return json.dumps(
                 {"ok": False, "error": self._blocked_reason(event, prompt)}, ensure_ascii=False
             )
         references = await self._collect_references(event)
-        if reference_image_path:
-            references.insert(0, reference_image_path)
         request = ImageRequest(
             prompt=str(prompt or ""),
-            kind=normalize_kind(kind),
+            kind=normalize_kind(kind or "auto"),
             model_key=str(model_key or ""),
             references=references,
             caption=str(caption or ""),
             source="tool",
         )
         result = await self._generate(request)
-        delivered = False
-        if result.ok and send:
-            async for _chunk in self._deliver(event, result, caption, quiet=True):
-                pass
-            delivered = True
-        result.sent = delivered
+        result.sent = await self._send_result(event, result, str(caption or ""))
         return json.dumps(result.to_receipt(), ensure_ascii=False)
 
     # ------------------------------------------------------------------ 生成
@@ -341,6 +398,39 @@ class TsukiyoMediaPlugin(Star):
             )
         return result
 
+    # ------------------------------------------------------------------ 调试
+    @filter.on_llm_request()
+    async def _debug_llm_req(self, event: AstrMessageEvent, req) -> None:
+        """临时诊断：确认本次请求里的工具列表是否包含生图工具。"""
+        try:
+            toolset = getattr(req, "func_tool", None)
+            tools = list(getattr(toolset, "tools", ()) or ())
+            names = [getattr(tool, "name", "") for tool in tools]
+            logger.info(
+                "[TsukiyoMedia][debug-req] count=%s has_tsukiyo=%s names=%s",
+                len(names),
+                "tsukiyo_image_generate" in names,
+                names,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.info("[TsukiyoMedia][debug-req] failed: %s", exc)
+
+    @filter.on_llm_response()
+    async def _debug_llm_resp(self, event: AstrMessageEvent, resp) -> None:
+        """临时诊断：把模型原始返回打进日志，确认是否有 tool_call 被丢弃。"""
+        try:
+            text = str(getattr(resp, "completion_text", "") or "")
+            names = list(getattr(resp, "tools_call_name", None) or [])
+            args = list(getattr(resp, "tools_call_args", None) or [])
+            logger.info(
+                "[TsukiyoMedia][debug] resp_text=%r tool_names=%s tool_args=%s",
+                text[:400],
+                names,
+                [str(a)[:200] for a in args],
+            )
+        except Exception:  # noqa: BLE001 - 调试失败不影响主流程
+            pass
+
     async def _deliver(
         self,
         event: AstrMessageEvent,
@@ -358,6 +448,28 @@ class TsukiyoMediaPlugin(Star):
             yield event.plain_result(text)
         for path in result.paths:
             yield event.image_result(path)
+
+    async def _send_result(
+        self, event: AstrMessageEvent, result: GenerationResult, caption: str = ""
+    ) -> bool:
+        """主动发送（工具调用 / 兜底路径用）。
+
+        命令处理函数可以 yield 结果交给框架发送；工具调用里 yield 出来的东西
+        没人消费，必须自己调用 event.send()。
+        """
+        chain: list = []
+        if not result.ok:
+            chain.append(Plain(f"没画出来：{result.error[:200]}"))
+        else:
+            text = str(caption or "").strip()
+            if text:
+                chain.append(Plain(text))
+            for path in result.paths:
+                chain.append(Image.fromFileSystem(path))
+        if not chain:
+            return False
+        await event.send(MessageChain(chain))
+        return bool(result.ok)
 
     async def _status_text(self) -> str:
         if self.client is None:
@@ -517,3 +629,4 @@ def _int_or(value: Any, default: int) -> int:
         return int(str(value))
     except (TypeError, ValueError):
         return default
+
