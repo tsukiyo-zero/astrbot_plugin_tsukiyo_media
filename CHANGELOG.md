@@ -20,6 +20,10 @@
 - **自拍档「默认模型」**：设置页三档的「自拍」里多一个模型下拉（存 `selfie.model`）。QQ 自拍、`/img selfie`、`tsukiyo_image_generate` 没显式传 `model_key` 时用它（底模 + 作者词 + 参数一起换）；页面生成仍以页面选的模型为准；默认模型被删/停用会自动退回工作流自带参数，不阻塞出图
 
 ### 修复
+- **工具调用发不出图**：`_deliver()` 是异步生成器，靠 `yield` 把图片交给框架发送——这只在命令处理函数里成立。工具调用里写的是 `async for _chunk in _deliver(...): pass`，结果全被丢弃，日志里的 `sent: true` 是假的。新增 `_send_result()`，直接 `await event.send(MessageChain([...]))`；工具路径和关键词兜底路径都改用它
+- 工具参数精简为 `prompt / kind / model_key / caption`（去掉 `boolean` 的 `send` 和路径参数 `reference_image_path`，可选参数统一 `Optional[...] = None`）
+- 工具描述从“功能说明”改为“触发条件”：用户说“来张自拍/发张照片/画一张…”时必须调用
+- 新增 `scripts/test_in_container.ps1`：把当前源码同步进容器跑单测（本机没装 Python 时的标准做法）
 - **设置页保存会把三档工作流写坏**：`applyConfig()` 先给 `<select>` 赋值、后填 `<option>`，值被丢弃后浏览器自动选中列表第一项（`draw-cat.json`），点保存就把「自拍 / 参考图 / 编辑」全写成纯文生图，参考图被静默忽略。改为**先填选项、再用配置值回填**；未配置时插入空选项「（未设置，用默认）」，不再把第一项当成用户选择
 - 「三档工作流」下拉的 change 事件同步写回 `state.config`，避免页面上改了但状态里还是旧值
 - **页面点「生成」报 `Failed to fetch`**：AstrBot 的插件页 iframe 是 `sandbox="allow-scripts allow-forms allow-downloads"`（**没有 `allow-same-origin`**），页面里直接 `fetch()` 属于跨域请求，被浏览器拦掉；只有走 `bridge` 由父页面同源代发才行。改为 `bridge.apiPost("generate", …)`，进度条退化为本地计时（拿不到 SSE 逐秒进度），`POST /generate` 响应补上 `positive` / `negative`，仍能看到实际提交的正负向词
