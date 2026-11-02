@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -26,6 +27,11 @@ WORKFLOWS = ROOT / "workflows"
 
 def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def normalize_text(text: str) -> str:
+    """统一逗号后的空格：作者词里常写成 `a,b,c`，合并时会规范成 `a, b, c`。"""
+    return re.sub(r"\s*,\s*", ", ", str(text or "")).strip(" ,\n")
 
 
 def save_json(path: Path, data: dict[str, Any]) -> None:
@@ -45,7 +51,7 @@ def model_catalog() -> dict[str, dict[str, Any]]:
 
 
 def build(kind: str, models: list[str]) -> None:
-    template_path = WORKFLOWS / kind / "default.json"
+    template_path = ROOT / "templates" / f"{kind}.json"
     if not template_path.exists():
         raise SystemExit(f"找不到链路模板：{template_path}")
     catalog = model_catalog()
@@ -65,8 +71,8 @@ def build(kind: str, models: list[str]) -> None:
         _, sampler_node = find_node(source, "KSampler")
         pos_id = sampler_node["inputs"]["positive"][0]
         neg_id = sampler_node["inputs"]["negative"][0]
-        pos_text = source[pos_id]["inputs"]["text"]
-        neg_text = source[neg_id]["inputs"]["text"]
+        pos_text = normalize_text(source[pos_id]["inputs"]["text"])
+        neg_text = normalize_text(source[neg_id]["inputs"]["text"])
 
         tpl_load_id, _ = find_node(template, "CheckpointLoaderSimple")
         tpl_sampler_id, tpl_sampler = find_node(template, "KSampler")

@@ -58,7 +58,7 @@
     "refscale",
     0
    ],
-   "weight": 0.45,
+   "weight": 0.55,
    "weight_type": "ease out",
    "combine_embeds": "concat",
    "start_at": 0.0,
@@ -95,8 +95,8 @@
  "latent": {
   "class_type": "EmptyLatentImage",
   "inputs": {
-   "width": 832,
-   "height": 1216,
+   "width": 1024,
+   "height": 1536,
    "batch_size": 1
   }
  },
@@ -147,7 +147,7 @@
     "decode",
     0
    ],
-   "filename_prefix": "qq-refgen"
+   "filename_prefix": "qq-refgen-user"
   }
  }
 }

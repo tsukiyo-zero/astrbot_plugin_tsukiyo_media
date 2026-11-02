@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import time
 import uuid
 from dataclasses import dataclass, field, replace
@@ -19,6 +20,7 @@ from .errors import BackendError, BindError, ConfigError, RoutingError, Workflow
 from .imaging import compress_image_bytes
 
 HISTORY_LIMIT = 60
+logger = logging.getLogger(__name__)
 from .prompt import build_prompt
 from .router import route_kind, select_model
 from .types import (
@@ -43,8 +45,6 @@ class KindProfile:
     denoise: float | None = None
     width: int = 0
     height: int = 0
-    #: 该链路的默认模型；请求里没显式指定时用它
-    model_key: str = ""
 
 
 @dataclass
@@ -169,8 +169,9 @@ class ImagePipeline:
             raise ConfigError(f"配置里缺少 {kind} 的工作流")
 
         # 自拍 / 参考图 / 编辑：工作流本身即真相——结构、底模、作者词、采样参数都在文件里。
-        # 选模型 = 选文件：<kind>/<model_key>.json，没有就用 <kind>/default.json。
-        model_key = str(request.model_key or profile.model_key or "").strip()
+        # 选模型 = 选文件：<kind>/<model_key>.json；没有专属文件就退回配置里指定的那个
+        #（三档的「工作流」下拉就是这个链路的默认，不再有单独的 default.json）。
+        model_key = str(request.model_key or "").strip()
         workflow = self.chain_workflow(kind, model_key, profile.workflow)
         profile = replace(
             profile,
@@ -183,12 +184,14 @@ class ImagePipeline:
         return kind, None, profile
 
     def chain_workflow(self, kind: str, model_key: str, fallback: str) -> str:
-        """按「目录 + 模型名」找链路工作流；找不到用 fallback（通常是 <kind>/default.json）。"""
+        """按「目录 + 模型名」找链路工作流；找不到用配置里指定的 fallback。"""
         name = str(model_key or "").strip()
         if name and "/" not in name and "\\" not in name and name not in {".", ".."}:
             relative = f"{kind}/{name}.json"
             if (self.workflow_dir / relative).exists():
                 return relative
+            # 不静默：模型没有专属链路文件时说明用了哪个
+            logger.info("[tsukiyo] %s 没有 %s/ 专属工作流，改用 %s", name, kind, fallback)
         return fallback
 
     def checkpoint_of(self, workflow_name: str) -> str:

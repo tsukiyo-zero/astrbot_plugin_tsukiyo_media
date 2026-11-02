@@ -16,7 +16,7 @@ class BuildPlanTest(unittest.TestCase):
             client=None,
             catalog=ModelCatalog(ROOT / "models.json"),
             settings=PipelineSettings(
-                profiles={KIND_SELFIE: KindProfile(workflow="selfie/default.json")}
+                profiles={KIND_SELFIE: KindProfile(workflow="selfie/miao.json")}
             ),
             workflow_dir=ROOT / "workflows",
             output_dir=Path(self.tmp.name),
@@ -25,40 +25,25 @@ class BuildPlanTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.tmp.cleanup()
 
-    def test_selfie_without_model_uses_default_file(self) -> None:
+    def test_selfie_without_model_uses_configured_workflow(self) -> None:
+        """没指定模型：用三档配置里选的那个文件，它就是默认。"""
         kind, entry, profile = self.pipeline.build_plan(
             ImageRequest(prompt="x", kind=KIND_SELFIE)
         )
         self.assertEqual(kind, KIND_SELFIE)
         self.assertIsNone(entry)
-        self.assertEqual(profile.workflow, "selfie/default.json")
-
-    def test_selfie_with_model_uses_its_own_file(self) -> None:
-        """选模型 = 选文件：selfie/miao.json。"""
-        _, entry, profile = self.pipeline.build_plan(
-            ImageRequest(prompt="x", kind=KIND_SELFIE, model_key="miao")
-        )
-        self.assertIsNone(entry)
         self.assertEqual(profile.workflow, "selfie/miao.json")
 
-    def test_selfie_model_without_file_falls_back_to_default(self) -> None:
-        """没有专属文件（如 pixel）就用 selfie/default.json，不报错。"""
+    def test_selfie_with_model_uses_its_own_file(self) -> None:
         _, _, profile = self.pipeline.build_plan(
-            ImageRequest(prompt="x", kind=KIND_SELFIE, model_key="pixel")
-        )
-        self.assertEqual(profile.workflow, "selfie/default.json")
-
-    def test_profile_default_model_is_used(self) -> None:
-        self.pipeline.settings.profiles[KIND_SELFIE].model_key = "novaflat"
-        _, _, profile = self.pipeline.build_plan(
-            ImageRequest(prompt="x", kind=KIND_SELFIE)
+            ImageRequest(prompt="x", kind=KIND_SELFIE, model_key="novaflat")
         )
         self.assertEqual(profile.workflow, "selfie/novaflat.json")
 
-    def test_request_model_wins_over_profile_default(self) -> None:
-        self.pipeline.settings.profiles[KIND_SELFIE].model_key = "novaflat"
+    def test_model_without_file_falls_back_to_configured(self) -> None:
+        """没有专属文件（如 pixel）就用配置里那个，不报错。"""
         _, _, profile = self.pipeline.build_plan(
-            ImageRequest(prompt="x", kind=KIND_SELFIE, model_key="miao")
+            ImageRequest(prompt="x", kind=KIND_SELFIE, model_key="pixel")
         )
         self.assertEqual(profile.workflow, "selfie/miao.json")
 
@@ -66,13 +51,13 @@ class BuildPlanTest(unittest.TestCase):
         _, _, profile = self.pipeline.build_plan(
             ImageRequest(prompt="x", kind=KIND_SELFIE, model_key="no-such-model")
         )
-        self.assertEqual(profile.workflow, "selfie/default.json")
+        self.assertEqual(profile.workflow, "selfie/miao.json")
 
     def test_model_key_cannot_escape_directory(self) -> None:
         _, _, profile = self.pipeline.build_plan(
             ImageRequest(prompt="x", kind=KIND_SELFIE, model_key="../text2img/draw-miao")
         )
-        self.assertEqual(profile.workflow, "selfie/default.json")
+        self.assertEqual(profile.workflow, "selfie/miao.json")
 
     def test_checkpoint_of_reads_model_workflow(self) -> None:
         self.assertEqual(
@@ -89,20 +74,18 @@ class BuildPlanTest(unittest.TestCase):
         pos, neg = self.pipeline.author_prompts("text2img/draw-miao.json")
         self.assertIn("pale_skin", pos)
         self.assertIn("bad feet", neg)
-        selfie_pos, _ = self.pipeline.author_prompts("selfie/default.json")
+        selfie_pos, _ = self.pipeline.author_prompts("selfie/obsession.json")
         self.assertNotEqual(pos, selfie_pos)
         self.assertEqual(self.pipeline.author_prompts("no-such.json"), ("", ""))
 
     def test_selfie_variants_are_complete_workflows(self) -> None:
-        """每个变体都自带底模与作者词，不依赖运行时覆盖。"""
-        miao = self.pipeline.load_workflow("selfie/miao.json")
+        """每个变体自带底模、作者词与 IP-Adapter，不依赖运行时覆盖。"""
+        workflow = self.pipeline.load_workflow("selfie/novaflat.json")
+        self.assertIn("ipa", workflow)
         self.assertEqual(
-            self.pipeline.checkpoint_of("selfie/miao.json"),
-            "miaomiaoRealskin_epsV14.safetensors",
+            self.pipeline.checkpoint_of("selfie/novaflat.json"),
+            "novaFlatXL_v90.safetensors",
         )
-        pos, _ = self.pipeline.author_prompts("selfie/miao.json")
-        self.assertIn("pale_skin", pos)
-        self.assertIn("ipa", miao)
 
 
 if __name__ == "__main__":
