@@ -106,6 +106,16 @@ function updateBanner(backend, models) {
   }
 }
 
+function displayLabel(item) {
+  // label 里再写一遍英文 key 是冗余的；显示时剥掉，key 另外展示
+  const label = String(item.label || item.key || "");
+  const key = String(item.key || "");
+  if (key && label.toLowerCase().startsWith(key.toLowerCase())) {
+    return label.slice(key.length).replace(/^[\s\-·_]+/, "") || key;
+  }
+  return label;
+}
+
 function renderModelsForGenerate(models, fallback) {
   const select = el("model");
   const previous = select.value;
@@ -114,7 +124,7 @@ function renderModelsForGenerate(models, fallback) {
   for (const item of usable) {
     const option = document.createElement("option");
     option.value = item.key;
-    option.textContent = item.label + (item.is_default ? "（默认）" : "");
+    option.textContent = displayLabel(item) + (item.is_default ? "（默认）" : "");
     select.appendChild(option);
   }
   if (!usable.length) {
