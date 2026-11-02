@@ -308,6 +308,7 @@ class TsukiyoMediaPlugin(Star):
             references=references,
             caption=str(caption or ""),
             source="tool",
+            hint=str(getattr(event, "message_str", "") or ""),
         )
         result = await self._generate(request)
         result.sent = await self._send_result(event, result, str(caption or ""))

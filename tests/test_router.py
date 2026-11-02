@@ -1,4 +1,4 @@
-﻿"""路由与选模测试：纯规则，不联网。"""
+"""路由与选模测试：纯规则，不联网。"""
 from __future__ import annotations
 
 import sys
@@ -85,6 +85,16 @@ class TestCorrectKind(unittest.TestCase):
             prompt="参考这张图，给我画一张在海边散步的图片",
             kind="edit",
             references=["a.png"],
+        )
+        self.assertEqual(correct_kind(KIND_EDIT, request), KIND_REFERENCE)
+
+    def test_hint_from_user_message_triggers_correction(self) -> None:
+        """模型把“参考这张”从 prompt 里省了，但用户原话里有 → 仍能纠正。"""
+        request = ImageRequest(
+            prompt="walking on beach, seaside, sunset, white hoodie",
+            kind="edit",
+            references=["a.png"],
+            hint="参考这张图，画她在海边散步",
         )
         self.assertEqual(correct_kind(KIND_EDIT, request), KIND_REFERENCE)
 

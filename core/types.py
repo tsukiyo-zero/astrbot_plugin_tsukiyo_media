@@ -55,6 +55,8 @@ class ImageRequest:
     extra_positive: str = ""
     extra_negative: str = ""
     source: str = ""
+    #: 用户原话（只用于判断链路，不参与提示词）
+    hint: str = ""
 
     def resolved_kind(self) -> str:
         return normalize_kind(self.kind)
