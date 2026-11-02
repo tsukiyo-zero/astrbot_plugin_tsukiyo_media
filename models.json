@@ -3,7 +3,7 @@
     "default":  "obsession",
     "models":  {
                    "obsession":  {
-                                     "label":  "obsession 华丽",
+                                     "label":  "华丽",
                                      "group":  "anime",
                                      "desc":  "通用泛用，细节多",
                                      "workflow":  "text2img/draw-obsession.json",
@@ -18,7 +18,7 @@
                                               ]
                                  },
                    "miao":  {
-                                "label":  "miao 柔光",
+                                "label":  "柔光",
                                 "group":  "real",
                                 "desc":  "肤感极佳，适合人像",
                                 "workflow":  "text2img/draw-miao.json",
@@ -34,7 +34,7 @@
                                          ]
                             },
                    "cat":  {
-                               "label":  "cat 清漫",
+                               "label":  "清漫",
                                "group":  "anime",
                                "desc":  "干净清爽",
                                "workflow":  "text2img/draw-cat.json",
@@ -48,7 +48,7 @@
                                         ]
                            },
                    "fabricated":  {
-                                      "label":  "fabricated 赛璐璐",
+                                      "label":  "赛璐璐",
                                       "group":  "anime",
                                       "desc":  "经典动画风",
                                       "workflow":  "text2img/draw-fabricated.json",
@@ -63,7 +63,7 @@
                                                ]
                                   },
                    "illustrious":  {
-                                       "label":  "illustrious 基础",
+                                       "label":  "基础",
                                        "group":  "anime",
                                        "desc":  "稳定不出错",
                                        "workflow":  "text2img/draw-illustrious.json",
@@ -77,7 +77,7 @@
                                                 ]
                                    },
                    "lemon":  {
-                                 "label":  "lemon 甜彩",
+                                 "label":  "甜彩",
                                  "group":  "anime",
                                  "desc":  "明亮甜系",
                                  "workflow":  "text2img/draw-lemon.json",
@@ -92,7 +92,7 @@
                                           ]
                              },
                    "novaflat":  {
-                                    "label":  "novaflat 通透",
+                                    "label":  "通透",
                                     "group":  "anime",
                                     "desc":  "平涂质感",
                                     "workflow":  "text2img/draw-novaflat.json",
@@ -108,7 +108,7 @@
                                              ]
                                 },
                    "pixel":  {
-                                 "label":  "pixel 像素",
+                                 "label":  "像素",
                                  "group":  "anime",
                                  "desc":  "复古像素风",
                                  "workflow":  "text2img/draw-pixel.json",
@@ -121,7 +121,7 @@
                                           ]
                              },
                    "xxmix":  {
-                                 "label":  "xxmix 写实",
+                                 "label":  "写实",
                                  "group":  "real",
                                  "desc":  "标准真人摄影风",
                                  "workflow":  "text2img/draw-xxmix.json",
