@@ -19,6 +19,8 @@
 - 新增 `tests/test_pipeline.py`（`build_plan` / checkpoint / 作者词解析 / 目录逃逸），并在 `tests/test_binder.py` 加底模与作者词覆盖用例
 - **自拍档「默认模型」**：设置页三档的「自拍」里多一个模型下拉（存 `selfie.model`）。QQ 自拍、`/img selfie`、`tsukiyo_image_generate` 没显式传 `model_key` 时用它（底模 + 作者词 + 参数一起换）；页面生成仍以页面选的模型为准；默认模型被删/停用会自动退回工作流自带参数，不阻塞出图
 
+- 三档工作流新增「固定负面词」（配置项 `<链路>.fixed_negative`）：顺序是 作者负向 → 全局负向 → 该链路固定负向 → 本次额外负向；留空不生效
+
 ### 修复
 - **工具调用发不出图**：`_deliver()` 是异步生成器，靠 `yield` 把图片交给框架发送——这只在命令处理函数里成立。工具调用里写的是 `async for _chunk in _deliver(...): pass`，结果全被丢弃，日志里的 `sent: true` 是假的。新增 `_send_result()`，直接 `await event.send(MessageChain([...]))`；工具路径和关键词兜底路径都改用它
 - 工具参数精简为 `prompt / kind / model_key / caption`（去掉 `boolean` 的 `send` 和路径参数 `reference_image_path`，可选参数统一 `Optional[...] = None`）

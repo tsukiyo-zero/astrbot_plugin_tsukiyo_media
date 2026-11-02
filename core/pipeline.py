@@ -39,6 +39,8 @@ class KindProfile:
 
     workflow: str = ""
     fixed_prompt: str = ""
+    #: 该链路固定追加的负面词（配置里 fixed_negative）
+    negative_prompt: str = ""
     identity_prompt: str = ""
     identity_image: str = ""
     ipadapter_weight: float | None = None
@@ -242,6 +244,7 @@ class ImagePipeline:
             kind=kind,
             identity_prompt=profile.identity_prompt,
             fixed_prompt=profile.fixed_prompt,
+            fixed_negative=profile.negative_prompt,
             global_negative=self.settings.negative_prompt,
             extra_positive=request.extra_positive,
             extra_negative=request.extra_negative,

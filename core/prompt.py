@@ -98,6 +98,7 @@ def build_prompt(
     kind: str,
     identity_prompt: str = "",
     fixed_prompt: str = "",
+    fixed_negative: str = "",
     global_negative: str = "",
     extra_positive: str = "",
     extra_negative: str = "",
@@ -118,6 +119,8 @@ def build_prompt(
     positive = join_parts([text for _name, text in parts])
 
     negatives = [sanitize(global_negative)] if global_negative else []
+    if fixed_negative:
+        negatives.append(sanitize(fixed_negative))
     if extra_negative:
         negatives.append(sanitize(extra_negative))
     negative = join_parts(negatives)

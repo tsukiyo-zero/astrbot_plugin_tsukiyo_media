@@ -168,6 +168,7 @@
             <label>工作流<select data-cfg="selfie.workflow" data-wf></select></label>
             <label>人设特征词<textarea rows="3" data-cfg="selfie.identity_prompt"></textarea></label>
             <label>固定构图词<input data-cfg="selfie.fixed_prompt" /></label>
+            <label>固定负面词<input data-cfg="selfie.fixed_negative" placeholder="留空则不追加，例：bad hands, extra limbs" /></label>
             <label>人设参考图<input data-cfg="selfie.reference_image" /></label>
             <div class="wf-summary" data-inspect-hint="selfie">切换工作流后这里显示它自带的参数</div>
             <div class="hint">尺寸 / 步数 / CFG / IPA 权重都写在工作流文件里，想改请去 ComfyUI 调好再导出覆盖</div>
@@ -176,6 +177,7 @@
             <legend>参考图</legend>
             <label>工作流<select data-cfg="reference.workflow" data-wf></select></label>
             <label>固定追加词<input data-cfg="reference.fixed_prompt" /></label>
+            <label>固定负面词<input data-cfg="reference.fixed_negative" /></label>
             <div class="wf-summary" data-inspect-hint="reference">切换工作流后这里显示它自带的参数</div>
             <div class="hint">参数同样以工作流文件为准</div>
           </fieldset>
@@ -183,6 +185,7 @@
             <legend>编辑</legend>
             <label>工作流<select data-cfg="edit.workflow" data-wf></select></label>
             <label>固定追加词<input data-cfg="edit.fixed_prompt" /></label>
+            <label>固定负面词<input data-cfg="edit.fixed_negative" /></label>
             <div class="wf-summary" data-inspect-hint="edit">切换工作流后这里显示它自带的参数</div>
             <div class="hint">重绘强度 / 尺寸也在工作流文件里</div>
           </fieldset>

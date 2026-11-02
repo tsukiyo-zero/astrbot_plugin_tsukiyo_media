@@ -1,241 +1,265 @@
 {
-  "enabled": {
-    "type": "bool",
-    "description": "总开关",
-    "hint": "关闭后命令与工具都不可用",
-    "default": true
-  },
-  "comfyui": {
-    "type": "object",
-    "description": "ComfyUI 连接",
-    "items": {
-      "base_url": {
-        "type": "string",
-        "description": "ComfyUI 地址",
-        "hint": "本机默认 http://127.0.0.1:8188",
-        "default": "http://127.0.0.1:8188"
-      },
-      "connect_timeout_seconds": {
-        "type": "int",
-        "description": "连接超时（秒）",
-        "default": 10
-      },
-      "job_timeout_seconds": {
-        "type": "int",
-        "description": "单张出图超时（秒）",
-        "hint": "SDXL 30 步一般 20–40 秒，冷启动要更久",
-        "default": 180
-      },
-      "poll_interval_seconds": {
-        "type": "float",
-        "description": "轮询间隔（秒）",
-        "default": 1.0
-      }
-    }
-  },
-  "paths": {
-    "type": "object",
-    "description": "路径",
-    "items": {
-      "workflow_dir": {
-        "type": "string",
-        "description": "工作流目录",
-        "hint": "相对路径按插件目录解析；留空用插件自带 workflows/",
-        "default": "workflows"
-      },
-      "catalog": {
-        "type": "string",
-        "description": "模型目录文件",
-        "hint": "默认 models.json，改完可用 /img reload 生效",
-        "default": "models.json"
-      },
-      "output_dir": {
-        "type": "string",
-        "description": "出图保存目录",
-        "hint": "留空保存到插件数据目录 output/",
-        "default": ""
-      },
-      "host_data_dir": {
-        "type": "string",
-        "description": "宿主机 data 目录（可选）",
-        "hint": "填写后，设置页会显示工作流目录的宿主路径，方便在资源管理器里直接打开；如 D:\\\\dafeiyu\\\\xiaofeiyu-docker\\\\data",
-        "default": ""
-      }
-    }
-  },
-  "generation": {
-    "type": "object",
-    "description": "通用生成参数",
-    "items": {
-      "negative_prompt": {
-        "type": "text",
-        "description": "全局负向词",
-        "hint": "会追加到工作流自带的负向词后面",
-        "default": "worst quality, low quality, normal quality, bad anatomy, extra fingers, watermark, text, signature, logo"
-      },
-      "prompt_mode": {
-        "type": "string",
-        "description": "与工作流作者词的拼接方式",
-        "hint": "append=保留作者词并追加（推荐）；replace=完全用插件拼的词覆盖作者词",
-        "default": "append"
-      },
-      "strip_non_english": {
-        "type": "bool",
-        "description": "丢弃含中文的子句",
-        "hint": "CLIP 读不懂中文；打开可避免中文占 token，但中文描述会被整句丢弃",
-        "default": false
-      },
-      "max_concurrent": {
-        "type": "int",
-        "description": "并发出图上限",
-        "hint": "单卡建议 1",
-        "default": 1
-      },
-      "filename_prefix": {
-        "type": "string",
-        "description": "ComfyUI 侧文件名前缀",
-        "default": "tsukiyo"
-      }
-    }
-  },
-  "text2img": {
-    "type": "object",
-    "description": "文生图",
-    "items": {
-      "fixed_prompt": {
-        "type": "text",
-        "description": "固定追加词",
-        "hint": "留空则只用模型作者词 + 你的描述",
-        "default": ""
-      }
-    }
-  },
-  "selfie": {
-    "type": "object",
-    "description": "自拍",
-    "items": {
-      "workflow": {
-        "type": "string",
-        "description": "工作流文件",
-        "default": "selfie/miao.json"
-      },
-      "reference_image": {
-        "type": "string",
-        "description": "人设参考图路径",
-        "hint": "相对路径按插件目录解析；留空则不用 IP-Adapter 身份参考",
-        "default": ""
-      },
-      "identity_prompt": {
-        "type": "text",
-        "description": "固定人设特征词（自拍档专用）",
-        "hint": "默认是一个示例角色（蓝发鲸鱼娘），换成你自己角色的特征即可；留空则不加任何固定特征",
-        "default": "1girl, solo, adult, mature female, blue hair, long hair, gradient hair, blue eyes, fish fin ears on the sides of the head, translucent blue fins, whale tail with deep blue star pattern, ahoge"
-      },
-      "fixed_prompt": {
-        "type": "text",
-        "description": "固定构图词",
-        "default": "cowboy shot, upper body, detailed face"
-      },
-      "ipadapter_weight": {
-        "type": "float",
-        "description": "IP-Adapter 权重",
-        "default": 0.45
-      },
-      "width": {
-        "type": "int",
-        "description": "宽",
-        "default": 832
-      },
-      "height": {
-        "type": "int",
-        "description": "高",
-        "default": 1216
-      }
-    }
-  },
-  "reference": {
-    "type": "object",
-    "description": "参考图生图",
-    "items": {
-      "workflow": {
-        "type": "string",
-        "description": "工作流文件",
-        "default": "reference/obsession.json"
-      },
-      "fixed_prompt": {
-        "type": "text",
-        "description": "固定追加词",
-        "default": ""
-      },
-      "ipadapter_weight": {
-        "type": "float",
-        "description": "IP-Adapter 权重",
-        "default": 0.55
-      },
-      "width": {
-        "type": "int",
-        "description": "宽",
-        "default": 1024
-      },
-      "height": {
-        "type": "int",
-        "description": "高",
-        "default": 1536
-      }
-    }
-  },
-  "edit": {
-    "type": "object",
-    "description": "编辑（img2img）",
-    "items": {
-      "workflow": {
-        "type": "string",
-        "description": "工作流文件",
-        "default": "edit/illustrious.json"
-      },
-      "fixed_prompt": {
-        "type": "text",
-        "description": "固定追加词",
-        "default": ""
-      },
-      "denoise": {
-        "type": "float",
-        "description": "重绘强度",
-        "hint": "0.45–0.65 比较稳；越大改动越大",
-        "default": 0.55
-      },
-      "width": {
-        "type": "int",
-        "description": "宽（0=沿用工作流/源图）",
-        "default": 0
-      },
-      "height": {
-        "type": "int",
-        "description": "高（0=沿用工作流/源图）",
-        "default": 0
-      }
-    }
-  },
-  "delivery": {
-    "type": "object",
-    "description": "投递限制",
-    "items": {
-      "allow_private": {
-        "type": "bool",
-        "description": "允许私聊生图",
-        "default": true
-      },
-      "allow_group": {
-        "type": "bool",
-        "description": "允许群聊生图",
-        "default": true
-      },
-      "group_block_nsfw": {
-        "type": "bool",
-        "description": "群聊拦截裸露类请求",
-        "hint": "命中 nude/naked/裸/脱光 等词直接拒绝，避免群图片违规",
-        "default": false
-      }
-    }
-  }
+    "enabled":  {
+                    "type":  "bool",
+                    "description":  "总开关",
+                    "hint":  "关闭后命令与工具都不可用",
+                    "default":  true
+                },
+    "comfyui":  {
+                    "type":  "object",
+                    "description":  "ComfyUI 连接",
+                    "items":  {
+                                  "base_url":  {
+                                                   "type":  "string",
+                                                   "description":  "ComfyUI 地址",
+                                                   "hint":  "本机默认 http://127.0.0.1:8188",
+                                                   "default":  "http://127.0.0.1:8188"
+                                               },
+                                  "connect_timeout_seconds":  {
+                                                                  "type":  "int",
+                                                                  "description":  "连接超时（秒）",
+                                                                  "default":  10
+                                                              },
+                                  "job_timeout_seconds":  {
+                                                              "type":  "int",
+                                                              "description":  "单张出图超时（秒）",
+                                                              "hint":  "SDXL 30 步一般 20–40 秒，冷启动要更久",
+                                                              "default":  180
+                                                          },
+                                  "poll_interval_seconds":  {
+                                                                "type":  "float",
+                                                                "description":  "轮询间隔（秒）",
+                                                                "default":  1.0
+                                                            }
+                              }
+                },
+    "paths":  {
+                  "type":  "object",
+                  "description":  "路径",
+                  "items":  {
+                                "workflow_dir":  {
+                                                     "type":  "string",
+                                                     "description":  "工作流目录",
+                                                     "hint":  "相对路径按插件目录解析；留空用插件自带 workflows/",
+                                                     "default":  "workflows"
+                                                 },
+                                "catalog":  {
+                                                "type":  "string",
+                                                "description":  "模型目录文件",
+                                                "hint":  "默认 models.json，改完可用 /img reload 生效",
+                                                "default":  "models.json"
+                                            },
+                                "output_dir":  {
+                                                   "type":  "string",
+                                                   "description":  "出图保存目录",
+                                                   "hint":  "留空保存到插件数据目录 output/",
+                                                   "default":  ""
+                                               },
+                                "host_data_dir":  {
+                                                      "type":  "string",
+                                                      "description":  "宿主机 data 目录（可选）",
+                                                      "hint":  "填写后，设置页会显示工作流目录的宿主路径，方便在资源管理器里直接打开；如 D:\\\\dafeiyu\\\\xiaofeiyu-docker\\\\data",
+                                                      "default":  ""
+                                                  }
+                            }
+              },
+    "generation":  {
+                       "type":  "object",
+                       "description":  "通用生成参数",
+                       "items":  {
+                                     "negative_prompt":  {
+                                                             "type":  "text",
+                                                             "description":  "全局负向词",
+                                                             "hint":  "会追加到工作流自带的负向词后面",
+                                                             "default":  "worst quality, low quality, normal quality, bad anatomy, extra fingers, watermark, text, signature, logo"
+                                                         },
+                                     "prompt_mode":  {
+                                                         "type":  "string",
+                                                         "description":  "与工作流作者词的拼接方式",
+                                                         "hint":  "append=保留作者词并追加（推荐）；replace=完全用插件拼的词覆盖作者词",
+                                                         "default":  "append"
+                                                     },
+                                     "strip_non_english":  {
+                                                               "type":  "bool",
+                                                               "description":  "丢弃含中文的子句",
+                                                               "hint":  "CLIP 读不懂中文；打开可避免中文占 token，但中文描述会被整句丢弃",
+                                                               "default":  false
+                                                           },
+                                     "max_concurrent":  {
+                                                            "type":  "int",
+                                                            "description":  "并发出图上限",
+                                                            "hint":  "单卡建议 1",
+                                                            "default":  1
+                                                        },
+                                     "filename_prefix":  {
+                                                             "type":  "string",
+                                                             "description":  "ComfyUI 侧文件名前缀",
+                                                             "default":  "tsukiyo"
+                                                         }
+                                 }
+                   },
+    "text2img":  {
+                     "type":  "object",
+                     "description":  "文生图",
+                     "items":  {
+                                   "fixed_prompt":  {
+                                                        "type":  "text",
+                                                        "description":  "固定追加词",
+                                                        "hint":  "留空则只用模型作者词 + 你的描述",
+                                                        "default":  ""
+                                                    },
+                                   "fixed_negative":  {
+                                                          "description":  "固定负面词（该链路追加）",
+                                                          "default":  "",
+                                                          "hint":  "留空则不追加；例：bad hands, extra limbs",
+                                                          "type":  "text"
+                                                      }
+                               }
+                 },
+    "selfie":  {
+                   "type":  "object",
+                   "description":  "自拍",
+                   "items":  {
+                                 "workflow":  {
+                                                  "type":  "string",
+                                                  "description":  "工作流文件",
+                                                  "default":  "selfie/miao.json"
+                                              },
+                                 "reference_image":  {
+                                                         "type":  "string",
+                                                         "description":  "人设参考图路径",
+                                                         "hint":  "相对路径按插件目录解析；留空则不用 IP-Adapter 身份参考",
+                                                         "default":  ""
+                                                     },
+                                 "identity_prompt":  {
+                                                         "type":  "text",
+                                                         "description":  "固定人设特征词（自拍档专用）",
+                                                         "hint":  "默认是一个示例角色（蓝发鲸鱼娘），换成你自己角色的特征即可；留空则不加任何固定特征",
+                                                         "default":  "1girl, solo, adult, mature female, blue hair, long hair, gradient hair, blue eyes, fish fin ears on the sides of the head, translucent blue fins, whale tail with deep blue star pattern, ahoge"
+                                                     },
+                                 "fixed_prompt":  {
+                                                      "type":  "text",
+                                                      "description":  "固定构图词",
+                                                      "default":  "cowboy shot, upper body, detailed face"
+                                                  },
+                                 "ipadapter_weight":  {
+                                                          "type":  "float",
+                                                          "description":  "IP-Adapter 权重",
+                                                          "default":  0.45
+                                                      },
+                                 "width":  {
+                                               "type":  "int",
+                                               "description":  "宽",
+                                               "default":  832
+                                           },
+                                 "height":  {
+                                                "type":  "int",
+                                                "description":  "高",
+                                                "default":  1216
+                                            },
+                                 "fixed_negative":  {
+                                                        "description":  "固定负面词（该链路追加）",
+                                                        "default":  "",
+                                                        "hint":  "留空则不追加；例：bad hands, extra limbs",
+                                                        "type":  "text"
+                                                    }
+                             }
+               },
+    "reference":  {
+                      "type":  "object",
+                      "description":  "参考图生图",
+                      "items":  {
+                                    "workflow":  {
+                                                     "type":  "string",
+                                                     "description":  "工作流文件",
+                                                     "default":  "reference/obsession.json"
+                                                 },
+                                    "fixed_prompt":  {
+                                                         "type":  "text",
+                                                         "description":  "固定追加词",
+                                                         "default":  ""
+                                                     },
+                                    "ipadapter_weight":  {
+                                                             "type":  "float",
+                                                             "description":  "IP-Adapter 权重",
+                                                             "default":  0.55
+                                                         },
+                                    "width":  {
+                                                  "type":  "int",
+                                                  "description":  "宽",
+                                                  "default":  1024
+                                              },
+                                    "height":  {
+                                                   "type":  "int",
+                                                   "description":  "高",
+                                                   "default":  1536
+                                               },
+                                    "fixed_negative":  {
+                                                           "description":  "固定负面词（该链路追加）",
+                                                           "default":  "",
+                                                           "hint":  "留空则不追加；例：bad hands, extra limbs",
+                                                           "type":  "text"
+                                                       }
+                                }
+                  },
+    "edit":  {
+                 "type":  "object",
+                 "description":  "编辑（img2img）",
+                 "items":  {
+                               "workflow":  {
+                                                "type":  "string",
+                                                "description":  "工作流文件",
+                                                "default":  "edit/illustrious.json"
+                                            },
+                               "fixed_prompt":  {
+                                                    "type":  "text",
+                                                    "description":  "固定追加词",
+                                                    "default":  ""
+                                                },
+                               "denoise":  {
+                                               "type":  "float",
+                                               "description":  "重绘强度",
+                                               "hint":  "0.45–0.65 比较稳；越大改动越大",
+                                               "default":  0.55
+                                           },
+                               "width":  {
+                                             "type":  "int",
+                                             "description":  "宽（0=沿用工作流/源图）",
+                                             "default":  0
+                                         },
+                               "height":  {
+                                              "type":  "int",
+                                              "description":  "高（0=沿用工作流/源图）",
+                                              "default":  0
+                                          },
+                               "fixed_negative":  {
+                                                      "description":  "固定负面词（该链路追加）",
+                                                      "default":  "",
+                                                      "hint":  "留空则不追加；例：bad hands, extra limbs",
+                                                      "type":  "text"
+                                                  }
+                           }
+             },
+    "delivery":  {
+                     "type":  "object",
+                     "description":  "投递限制",
+                     "items":  {
+                                   "allow_private":  {
+                                                         "type":  "bool",
+                                                         "description":  "允许私聊生图",
+                                                         "default":  true
+                                                     },
+                                   "allow_group":  {
+                                                       "type":  "bool",
+                                                       "description":  "允许群聊生图",
+                                                       "default":  true
+                                                   },
+                                   "group_block_nsfw":  {
+                                                            "type":  "bool",
+                                                            "description":  "群聊拦截裸露类请求",
+                                                            "hint":  "命中 nude/naked/裸/脱光 等词直接拒绝，避免群图片违规",
+                                                            "default":  false
+                                                        }
+                               }
+                 }
 }
