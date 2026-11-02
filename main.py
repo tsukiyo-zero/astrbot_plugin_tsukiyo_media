@@ -291,7 +291,7 @@ class TsukiyoMediaPlugin(Star):
         """生成一张图并发到当前会话。用户说“来张自拍”“发张照片”“画一张…”“把这张改成…”时必须调用这个工具，不要只用文字回复。
 
         Args:
-            prompt(string): 画面描述，英文逗号分隔的 danbooru 风格 tag（如 1girl, sitting, window, evening）。不要写句子、不要写 "Positive prompt:" 之类标签；中文会被忽略。
+            prompt(string): 这张图的内容，英文逗号分隔的 danbooru 风格 tag（如 sitting, window, evening, white hoodie）。只写场景、动作、服装、光线、表情；**不要写她本人的外貌**（发色、瞳色、耳朵、尾巴、发饰——插件会自动追加，写错反而破坏一致性）。不要写句子、不要写 "Positive prompt:" 之类标签；中文会被忽略。
             kind(string, optional): selfie = 你本人出镜（用户想看你的样子、要自拍）；text2img = 画别的画面；edit = 修改用户发来的图（改成/换成/去掉）；reference = 照用户发来的图重画；不确定就省略。
             model_key(string, optional): 模型 key，通常省略。
             caption(string, optional): 随图发送的一句话；省略则只发图。
