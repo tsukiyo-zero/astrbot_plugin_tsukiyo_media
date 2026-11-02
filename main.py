@@ -77,43 +77,6 @@ class TsukiyoMediaPlugin(Star):
             self.page_api.register(context)
         except Exception as exc:  # pragma: no cover - 老版本或权限问题不影响主功能
             logger.warning("[TsukiyoMedia] 插件页面注册失败：%s", exc)
-        self._dump_tool_schema()
-
-    def _dump_tool_schema(self) -> None:
-        """临时诊断：打印 AstrBot 为生图工具生成的 schema。"""
-        try:
-            import json as _json
-
-            from astrbot.core.star.star_handler import star_handlers_registry
-
-            for handler in star_handlers_registry:
-                if "tsukiyo_image_generate" not in str(getattr(handler, "handler_full_name", "")):
-                    continue
-                attrs = [a for a in dir(handler) if not a.startswith("_")]
-                logger.info("[TsukiyoMedia][schema] handler attrs=%s", attrs)
-                logger.info(
-                    "[TsukiyoMedia][schema] extras=%s desc=%s",
-                    _json.dumps(
-                        getattr(handler, "extras_configs", None), ensure_ascii=False, default=str
-                    )[:1500],
-                    str(getattr(handler, "desc", ""))[:300],
-                )
-                for attr in ("func_tool", "tool", "llm_tool"):
-                    tool = getattr(handler, attr, None)
-                    if tool is None:
-                        continue
-                    logger.info(
-                        "[TsukiyoMedia][schema] %s name=%s desc=%s params=%s",
-                        attr,
-                        getattr(tool, "name", ""),
-                        str(getattr(tool, "description", ""))[:120],
-                        _json.dumps(
-                            getattr(tool, "parameters", None) or getattr(tool, "schema", None),
-                            ensure_ascii=False,
-                        )[:1200],
-                    )
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("[TsukiyoMedia][schema] dump failed: %s", exc)
 
     def _log_registered_commands(self) -> None:
         """启动自检：确认本插件的命令/别名真的注册上了（过滤器是 AND 关系，叠多个会失效）。"""
@@ -221,35 +184,6 @@ class TsukiyoMediaPlugin(Star):
         candidate = Path(str(value)).expanduser()
         return candidate if candidate.is_absolute() else (self.root / candidate).resolve()
 
-    # ------------------------------------------------------------------ 兜底
-    _SELFIE_RE = re.compile(
-        r"(来|发|给|拍|要|看)(一|两)?张?(自拍|照片|照)|自拍一张|拍张照|拍一张|你的样子"
-    )
-
-    @filter.event_message_type(filter.EventMessageType.ALL)
-    async def auto_selfie_fallback(self, event: AstrMessageEvent) -> None:
-        """模型不肯调工具时的兜底：消息里明确要自拍，就直接出图。
-
-        只在私聊/被 @ 时触发；不处理以命令前缀开头的消息。
-        """
-        text = str(getattr(event, "message_str", "") or "").strip()
-        if not text or text.startswith(("/", "／")):
-            return
-        if not self._SELFIE_RE.search(text):
-            return
-        if self.pipeline is None:
-            return
-        private = bool(getattr(event, "is_private_chat", lambda: True)())
-        if not private and not bool(getattr(event, "is_at_or_wake_command", False)):
-            return
-        try:
-            request = ImageRequest(prompt="", kind=KIND_SELFIE, source="fallback")
-            result = await self._generate(request)
-            await self._send_result(event, result, "")
-        except Exception as exc:  # noqa: BLE001 - 兜底失败不影响主流程
-            logger.warning("[TsukiyoMedia] 自拍兜底失败：%s", exc)
-            return
-        event.stop_event()
 
     @staticmethod
     def _opt_float(value: Any) -> float | None:
@@ -398,38 +332,6 @@ class TsukiyoMediaPlugin(Star):
             )
         return result
 
-    # ------------------------------------------------------------------ 调试
-    @filter.on_llm_request()
-    async def _debug_llm_req(self, event: AstrMessageEvent, req) -> None:
-        """临时诊断：确认本次请求里的工具列表是否包含生图工具。"""
-        try:
-            toolset = getattr(req, "func_tool", None)
-            tools = list(getattr(toolset, "tools", ()) or ())
-            names = [getattr(tool, "name", "") for tool in tools]
-            logger.info(
-                "[TsukiyoMedia][debug-req] count=%s has_tsukiyo=%s names=%s",
-                len(names),
-                "tsukiyo_image_generate" in names,
-                names,
-            )
-        except Exception as exc:  # noqa: BLE001
-            logger.info("[TsukiyoMedia][debug-req] failed: %s", exc)
-
-    @filter.on_llm_response()
-    async def _debug_llm_resp(self, event: AstrMessageEvent, resp) -> None:
-        """临时诊断：把模型原始返回打进日志，确认是否有 tool_call 被丢弃。"""
-        try:
-            text = str(getattr(resp, "completion_text", "") or "")
-            names = list(getattr(resp, "tools_call_name", None) or [])
-            args = list(getattr(resp, "tools_call_args", None) or [])
-            logger.info(
-                "[TsukiyoMedia][debug] resp_text=%r tool_names=%s tool_args=%s",
-                text[:400],
-                names,
-                [str(a)[:200] for a in args],
-            )
-        except Exception:  # noqa: BLE001 - 调试失败不影响主流程
-            pass
 
     async def _deliver(
         self,
