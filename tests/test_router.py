@@ -1,4 +1,4 @@
-"""路由与选模测试：纯规则，不联网。"""
+﻿"""路由与选模测试：纯规则，不联网。"""
 from __future__ import annotations
 
 import sys
@@ -11,7 +11,7 @@ if str(REPO.parent) not in sys.path:
 
 from astrbot_plugin_tsukiyo_media.core.catalog import ModelCatalog  # noqa: E402
 from astrbot_plugin_tsukiyo_media.core.errors import RoutingError  # noqa: E402
-from astrbot_plugin_tsukiyo_media.core.router import route_kind, select_model  # noqa: E402
+from astrbot_plugin_tsukiyo_media.core.router import correct_kind, route_kind, select_model  # noqa: E402
 from astrbot_plugin_tsukiyo_media.core.types import (  # noqa: E402
     KIND_EDIT,
     KIND_REFERENCE,
@@ -78,5 +78,29 @@ class TestSelectModel(unittest.TestCase):
         self.assertIn(CATALOG.default_key, CATALOG.keys())
 
 
+class TestCorrectKind(unittest.TestCase):
+    def test_edit_with_reference_wording_becomes_reference(self) -> None:
+        """模型显式选了 edit，但描述是“参考这张画新场景”时纠正为 reference。"""
+        request = ImageRequest(
+            prompt="参考这张图，给我画一张在海边散步的图片",
+            kind="edit",
+            references=["a.png"],
+        )
+        self.assertEqual(correct_kind(KIND_EDIT, request), KIND_REFERENCE)
+
+    def test_real_edit_stays_edit(self) -> None:
+        request = ImageRequest(prompt="把这张图改成夜景", kind="edit", references=["a.png"])
+        self.assertEqual(correct_kind(KIND_EDIT, request), KIND_EDIT)
+
+    def test_edit_without_reference_stays_edit(self) -> None:
+        request = ImageRequest(prompt="参考这张图", kind="edit")
+        self.assertEqual(correct_kind(KIND_EDIT, request), KIND_EDIT)
+
+    def test_other_kinds_untouched(self) -> None:
+        request = ImageRequest(prompt="参考这张图", kind="selfie", references=["a.png"])
+        self.assertEqual(correct_kind(KIND_SELFIE, request), KIND_SELFIE)
+
+
 if __name__ == "__main__":
     unittest.main()
+

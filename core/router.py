@@ -60,6 +60,22 @@ def route_kind(request: ImageRequest) -> str:
     return KIND_SELFIE if _matches(_SELFIE_PATTERNS, text) else KIND_TEXT2IMG
 
 
+def correct_kind(kind: str, request: ImageRequest) -> str:
+    """纠正“显式选了 edit、描述其实是在画新场景”的情况。
+
+    模型经常把“参考这张图，画一张在海边散步”当成 edit。判据：
+    有参考图 + 描述里是“参考/照着/换场景” + 没有“改成/换成/去掉”这类改写词。
+    """
+    if kind != KIND_EDIT or not request.references:
+        return kind
+    text = str(request.prompt or "")
+    if _matches(_EDIT_PATTERNS, text):
+        return kind
+    if _matches(_REFERENCE_PATTERNS, text):
+        return KIND_REFERENCE
+    return kind
+
+
 def select_model(
     catalog: ModelCatalog,
     prompt: str,
