@@ -600,36 +600,13 @@ function renderWorkflowTable() {
 
     const tdUse = document.createElement("td");
     tdUse.className = "cell-ro";
-    const owners = state.usage[name] || [];
-    tdUse.textContent = owners.length ? owners.join(", ") : "未被引用";
+    tdUse.textContent = describeWorkflow(name);
 
-    const tdKind = document.createElement("td");
-    const actions = document.createElement("div");
-    actions.className = "kind-actions";
-    for (const pair of [["selfie", "自拍"], ["reference", "参考图"], ["edit", "编辑"]]) {
-      const kind = pair[0];
-      const label = pair[1];
-      const active = ((state.config[kind] || {}).workflow || "") === name;
-      const compatible = name.startsWith(kind + "/");
-      const btn = document.createElement("button");
-      btn.className = "ghost" + (active ? " active" : "");
-      btn.textContent = active ? "✓ " + label : label;
-      btn.disabled = !compatible;
-      btn.title = !compatible
-        ? "只能指派 " + kind + "/ 目录下的文件"
-        : active
-          ? "当前已用于" + label
-          : "设为" + label + "档工作流";
-      btn.addEventListener("click", () => assignKind(kind, name));
-      actions.appendChild(btn);
-    }
-    tdKind.appendChild(actions);
-
-    tr.append(tdName, tdNote, tdUse, tdKind);
+    tr.append(tdName, tdNote, tdUse);
     body.appendChild(tr);
   }
   if (!state.files.length) {
-    body.innerHTML = '<tr><td colspan="4" class="hint">工作流目录里没有 json，先上传一个</td></tr>';
+    body.innerHTML = '<tr><td colspan="3" class="hint">工作流目录里没有 json，先上传一个</td></tr>';
   }
 }
 
@@ -666,14 +643,16 @@ async function autofillFromWorkflow(kind, name) {
   }
 }
 
-function assignKind(kind, name) {
-  state.config[kind] = Object.assign({}, state.config[kind] || {}, { workflow: name });
-  const select = document.querySelector('select[data-cfg="' + kind + '.workflow"]');
-  if (select) select.value = name;
-  autofillFromWorkflow(kind, name);
-  renderWorkflowTable();
+function describeWorkflow(name) {
+  const folder = name.split("/")[0];
+  if (folder === "text2img") {
+    const owners = state.usage[name] || [];
+    return owners.length ? "文生图 · " + owners.join("、") : "文生图 · 暂无模型使用";
+  }
   const labels = { selfie: "自拍", reference: "参考图", edit: "编辑" };
-  setStatus("已把 " + name + " 设为「" + (labels[kind] || kind) + "」工作流（记得点保存）", "warn");
+  const base = name.split("/")[1].replace(/\.json$/, "");
+  const isDefault = ((state.config[folder] || {}).workflow || "") === name;
+  return (labels[folder] || folder) + " · " + base + (isDefault ? "（当前默认）" : "");
 }
 
 function renderDiagnostics(items) {
