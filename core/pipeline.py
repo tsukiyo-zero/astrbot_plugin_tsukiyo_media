@@ -22,7 +22,7 @@ from .imaging import compress_image_bytes
 HISTORY_LIMIT = 60
 logger = logging.getLogger(__name__)
 from .prompt import build_prompt
-from .router import route_kind, select_model
+from .router import correct_kind, route_kind, select_model
 from .types import (
     KIND_EDIT,
     KIND_REFERENCE,
@@ -150,6 +150,7 @@ class ImagePipeline:
     def build_plan(self, request: ImageRequest) -> tuple[str, Any, KindProfile]:
         """返回 (kind, 工作流名, profile)。"""
         kind = route_kind(request)
+        kind = correct_kind(kind, request)
         if kind in (KIND_EDIT, KIND_REFERENCE) and not request.references:
             raise RoutingError("这条链路需要你先发一张图（或引用一张图）")
 
