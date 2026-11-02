@@ -8,9 +8,10 @@
 
 ### 新增
 - **工作流按链路分目录**：`workflows/text2img|selfie|reference|edit/`，目录即类型——自拍只能读 `selfie/`，页面下拉按目录过滤，从机制上杜绝“自拍选中 `draw-*` 导致参考图静默失效”
-- **选模型 = 选文件**：`<链路>/<模型>.json` 优先，没有就用 `<链路>/default.json`；参数、作者词、底模全部只存在于工作流文件里，**不再运行时覆盖**。首批自拍变体：`selfie/obsession.json`、`selfie/miao.json`、`selfie/novaflat.json`
+- **选模型 = 选文件**：`<链路>/<模型>.json` 优先，没有就退回三档里配置的那个文件（不再有 `default.json` 这种重复概念——配置选谁，谁就是默认）。参数、作者词、底模全部只存在于工作流文件里，**不再运行时覆盖**。首批自拍变体：`selfie/obsession.json`、`selfie/miao.json`、`selfie/novaflat.json`
+- 链路模板移到 `templates/`（`selfie.json` / `reference.json` / `edit.json`），只供生成脚本使用，不参与运行时扫描
 - 新增 `scripts/build_chain_workflows.py`：从模型的 `text2img/` 工作流里取底模、作者正负向词、步数/CFG/采样器，灌进链路模板生成变体，避免手工复制
-- 三档设置去掉 IPA / 宽高 / 重绘强度输入（这些归工作流文件），只保留：工作流、默认模型、人设词、固定词、人设参考图
+- 三档设置去掉 IPA / 宽高 / 重绘强度输入（这些归工作流文件），只保留：工作流、人设词、固定词、人设参考图；**「默认模型」也去掉**——工作流下拉选哪个文件，哪个就是默认
 - **自拍 / 参考图 / 编辑也能用「模型」换画风**：工作流结构保持专用（IP-Adapter / img2img 不变），底模换成所选模型工作流里的 checkpoint，步数 / CFG / 采样器 / 尺寸跟该模型的作者参数走；不选模型时行为与之前完全一致
 - **选模型时作者正负向词一起跟随**：这三条链路不再固定用 `selfie-ref.json` 里那套 obsession 作者词，而是取所选模型 `draw-*.json` 的 pos/neg；人设词、固定提示词、你的描述仍追加在后面。以前选 `miao` 跑自拍，底模换了但作者词还是 obsession 的（`bad feet`、`pale_skin` 都不会进来）
 - 新增 `tests/test_pipeline.py`（`build_plan` / checkpoint / 作者词解析 / 目录逃逸），并在 `tests/test_binder.py` 加底模与作者词覆盖用例

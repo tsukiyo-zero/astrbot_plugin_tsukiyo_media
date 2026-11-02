@@ -18,9 +18,9 @@ from astrbot_plugin_tsukiyo_media.backends.comfyui.binder import (  # noqa: E402
 from astrbot_plugin_tsukiyo_media.core.errors import BindError  # noqa: E402
 
 WORKFLOW_DIR = REPO / "workflows"
-SELFIE = "selfie/default.json"
-REFERENCE = "reference/default.json"
-IMG2IMG = "edit/default.json"
+SELFIE = "selfie/obsession.json"
+REFERENCE = "reference/obsession.json"
+IMG2IMG = "edit/illustrious.json"
 DRAW = "text2img/draw-miao.json"
 
 
