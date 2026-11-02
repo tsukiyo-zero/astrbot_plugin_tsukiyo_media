@@ -119,8 +119,8 @@
         <h2>先搞清楚三件事</h2>
         <p class="hint">
           <b>后端</b>：目前只支持<b>本地 ComfyUI</b>（HTTP API），在线 API 在路线图里。<br />
-          <b>模型</b>：<code>models.json</code> 的一条，决定「工作流 + 作者参数（steps/cfg/采样器/尺寸）」。<br />
-          <b>工作流</b>：<code>workflows/</code> 下的 ComfyUI <b>API 格式</b> JSON（ComfyUI 里「导出 (API)」得到）。
+          <b>模型</b>：<code>models.json</code> 的一条，只管「叫什么、别名、分类、指向哪个文生图工作流」；参数全在工作流里。<br />
+          <b>工作流</b>：<code>workflows/</code> 下按链路分目录的 ComfyUI <b>API 格式</b> JSON（ComfyUI 里「导出 (API)」得到）。
         </p>
         <div class="paths">
           <div><span class="hint">工作流目录</span><code id="p-wf"></code><button class="ghost" data-copy="p-wf">复制</button></div>
@@ -209,25 +209,13 @@
             <thead>
               <tr>
                 <th>启用</th><th>默认</th><th>key</th><th>名称</th><th>分类</th><th>定位</th><th>工作流</th>
-                <th>steps</th><th>cfg</th><th>宽</th><th>高</th><th>采样器</th><th>调度器</th>
                 <th>别名</th><th>标签</th><th></th>
               </tr>
             </thead>
             <tbody id="models-body"></tbody>
           </table>
         </div>
-        <details class="advanced">
-          <summary>采样器 / 调度器怎么选</summary>
-          <ul class="hint sampler-help">
-            <li><code>euler_ancestral</code> — 最快最通用，动漫感强，细节略噪（默认首选）</li>
-            <li><code>dpmpp_2m</code> — 稳，写实人像常用，观感干净</li>
-            <li><code>dpmpp_2m_sde</code> — 细节更多，速度慢一些</li>
-            <li><code>lcm</code> — 4~8 步就能出图，适合草稿/快速看效果</li>
-            <li><code>ddim</code> — 平直，老模型兼容好</li>
-            <li><code>uni_pc</code> — 通用收敛稳，参数不折腾</li>
-            <li>调度器：<code>normal</code> 线性（通用）；<code>karras</code> 高光收敛好（写实常用）；<code>exponential</code> 亮部柔和；<code>sgm_uniform</code> 均匀</li>
-          </ul>
-        </details>
+        <p class="hint">步骤 / CFG / 尺寸 / 采样器都写在工作流文件里；这张表只管「叫什么、怎么被选中、指向哪个工作流」。</p>
       </section>
 
       <section class="panel">
@@ -246,28 +234,6 @@
         </div>
       </section>
     </section>
-
-    <datalist id="sampler-options">
-      <option value="euler_ancestral"></option>
-      <option value="euler"></option>
-      <option value="dpmpp_2m"></option>
-      <option value="dpmpp_2m_sde"></option>
-      <option value="dpmpp_sde"></option>
-      <option value="dpmpp_3m_sde"></option>
-      <option value="ddim"></option>
-      <option value="uni_pc"></option>
-      <option value="heun"></option>
-      <option value="lcm"></option>
-    </datalist>
-    <datalist id="scheduler-options">
-      <option value="normal"></option>
-      <option value="karras"></option>
-      <option value="exponential"></option>
-      <option value="sgm_uniform"></option>
-      <option value="simple"></option>
-      <option value="ddim_uniform"></option>
-      <option value="beta"></option>
-    </datalist>
 
     <script type="module" src="./app.js"></script>
   </body>

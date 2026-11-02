@@ -435,7 +435,6 @@ function collectConfig() {
 
 function modelRow(model, index) {
   const tr = document.createElement("tr");
-  const params = model.author_params || {};
 
   const enabled = document.createElement("input");
   enabled.type = "checkbox";
@@ -503,7 +502,14 @@ function modelRow(model, index) {
   tdDesc.appendChild(desc);
 
   const wf = document.createElement("select");
-  fillWorkflowSelect(wf, model.workflow);
+  // 模型表只服务文生图：只列 text2img/ 下的文件
+  for (const name of state.files.filter((item) => item.startsWith("text2img/"))) {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    wf.appendChild(option);
+  }
+  if (model.workflow) wf.value = model.workflow;
   wf.addEventListener("change", () => {
     state.models[index].workflow = wf.value;
   });
@@ -511,37 +517,6 @@ function modelRow(model, index) {
   tdWf.appendChild(wf);
 
   const cells = [];
-  for (const spec of [["steps", 1], ["cfg", 0.1], ["width", 64], ["height", 64]]) {
-    const field = spec[0];
-    const td = document.createElement("td");
-    const input = document.createElement("input");
-    input.type = "number";
-    input.step = String(spec[1]);
-    input.value = params[field] === undefined || params[field] === null ? "" : params[field];
-    input.className = "cell-num";
-    input.addEventListener("input", () => {
-      const target = state.models[index];
-      target.author_params = Object.assign({}, target.author_params || {});
-      target.author_params[field] = input.value === "" ? "" : Number(input.value);
-    });
-    td.appendChild(input);
-    cells.push(td);
-  }
-  for (const field of ["sampler_name", "scheduler"]) {
-    const td = document.createElement("td");
-    const input = document.createElement("input");
-    input.value = params[field] || "";
-    input.placeholder = field === "sampler_name" ? "euler_ancestral" : "normal";
-    input.setAttribute("list", field === "sampler_name" ? "sampler-options" : "scheduler-options");
-    input.className = "cell-text";
-    input.addEventListener("input", () => {
-      const target = state.models[index];
-      target.author_params = Object.assign({}, target.author_params || {});
-      target.author_params[field] = input.value;
-    });
-    td.appendChild(input);
-    cells.push(td);
-  }
   for (const field of ["aliases", "tags"]) {
     const td = document.createElement("td");
     const input = document.createElement("input");
@@ -625,10 +600,16 @@ function renderWorkflowTable() {
       const kind = pair[0];
       const label = pair[1];
       const active = ((state.config[kind] || {}).workflow || "") === name;
+      const compatible = name.startsWith(kind + "/");
       const btn = document.createElement("button");
       btn.className = "ghost" + (active ? " active" : "");
       btn.textContent = active ? "✓ " + label : label;
-      btn.title = active ? "当前已用于" + label : "设为" + label + "档工作流";
+      btn.disabled = !compatible;
+      btn.title = !compatible
+        ? "只能指派 " + kind + "/ 目录下的文件"
+        : active
+          ? "当前已用于" + label
+          : "设为" + label + "档工作流";
       btn.addEventListener("click", () => assignKind(kind, name));
       actions.appendChild(btn);
     }
@@ -709,7 +690,7 @@ function applySettings(data) {
   state.notes = data.workflow_notes || {};
   state.usage = data.workflow_usage || {};
   state.paths = data.paths || {};
-  state.models = (data.models || []).map((m) => Object.assign({}, m, { author_params: Object.assign({}, m.author_params || {}) }));
+  state.models = (data.models || []).map((m) => Object.assign({}, m));
   state.originalKeys = new Set(state.models.map((m) => String(m.key || "").trim()).filter(Boolean));
   el("chip-ver").textContent = "v" + (data.version || "?");
 
@@ -753,7 +734,6 @@ async function saveAll() {
         enabled: item.enabled !== false,
         aliases: item.aliases || [],
         tags: item.tags || [],
-        author_params: item.author_params || {},
       };
     }
     if (!kept.length) throw new Error("至少保留一个模型");
@@ -793,14 +773,13 @@ function addModel() {
   state.models.push({
     key: "",
     label: "",
-    workflow: state.files[0] || "",
+    workflow: state.files.filter((name) => name.startsWith("text2img/"))[0] || "",
     enabled: true,
     is_default: state.models.length === 0,
     group: "anime",
     desc: "",
     aliases: [],
     tags: [],
-    author_params: { steps: 30, cfg: 5, width: 832, height: 1216, sampler_name: "euler_ancestral", scheduler: "normal" },
   });
   renderModelTable();
 }
@@ -884,3 +863,4 @@ for (const button of document.querySelectorAll("[data-copy]")) {
   await loadStatus();
   await loadHistory();
 })();
+

@@ -375,7 +375,7 @@ class PageAPI:
         """整表保存：支持新增（upsert）、删除、改字段、切默认。
 
         payload = {"models": {key: {...}}, "delete": ["key"], "default": "key"}
-        模型字段：label / workflow / enabled / aliases / tags / author_params
+        模型字段：label / workflow / enabled / aliases / tags / group / desc
         """
         payload = await request.json(default={})
         if not isinstance(payload, dict):
@@ -418,20 +418,6 @@ class PageAPI:
                     entry["aliases"] = _as_list(item.get("aliases"))
                 if "tags" in item:
                     entry["tags"] = _as_list(item.get("tags"))
-                params = item.get("author_params")
-                if isinstance(params, dict):
-                    cleaned = {}
-                    for field in ("steps", "cfg", "width", "height"):
-                        if params.get(field) not in (None, ""):
-                            try:
-                                cleaned[field] = int(float(params[field])) if field != "cfg" else float(params[field])
-                            except (TypeError, ValueError):
-                                continue
-                    for field in ("sampler_name", "scheduler"):
-                        if params.get(field):
-                            cleaned[field] = str(params[field]).strip()
-                    if cleaned:
-                        entry["author_params"] = {**(entry.get("author_params") or {}), **cleaned}
                 models[key] = entry
 
         if not models:
