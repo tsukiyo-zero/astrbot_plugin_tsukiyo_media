@@ -158,6 +158,7 @@ class TsukiyoMediaPlugin(Star):
             KIND_SELFIE: KindProfile(
                 workflow=str(selfie.get("workflow") or "selfie/miao.json"),
                 fixed_prompt=str(selfie.get("fixed_prompt") or ""),
+                negative_prompt=str(selfie.get("fixed_negative") or ""),
                 identity_prompt=str(selfie.get("identity_prompt") or ""),
                 identity_image=selfie_image,
                 ipadapter_weight=self._opt_float(selfie.get("ipadapter_weight")),
@@ -167,6 +168,7 @@ class TsukiyoMediaPlugin(Star):
             KIND_REFERENCE: KindProfile(
                 workflow=str(reference.get("workflow") or "reference/obsession.json"),
                 fixed_prompt=str(reference.get("fixed_prompt") or ""),
+                negative_prompt=str(reference.get("fixed_negative") or ""),
                 ipadapter_weight=self._opt_float(reference.get("ipadapter_weight")),
                 width=int(reference.get("width") or 0),
                 height=int(reference.get("height") or 0),
@@ -174,6 +176,7 @@ class TsukiyoMediaPlugin(Star):
             KIND_EDIT: KindProfile(
                 workflow=str(edit.get("workflow") or "edit/illustrious.json"),
                 fixed_prompt=str(edit.get("fixed_prompt") or ""),
+                negative_prompt=str(edit.get("fixed_negative") or ""),
                 denoise=self._opt_float(edit.get("denoise")),
                 width=int(edit.get("width") or 0),
                 height=int(edit.get("height") or 0),

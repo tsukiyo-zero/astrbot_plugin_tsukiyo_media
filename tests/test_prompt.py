@@ -85,5 +85,26 @@ class TestBuildPrompt(unittest.TestCase):
         self.assertIn("blurry", bundle.negative)
 
 
+    def test_fixed_negative_kept(self) -> None:
+        """三档里的「固定负面词」要追加在全局负面词之后、本次额外词之前。"""
+        bundle = build_prompt(
+            user_prompt="x",
+            kind=KIND_SELFIE,
+            fixed_negative="extra limbs, bad feet",
+            global_negative="bad hands",
+            extra_negative="blurry",
+        )
+        self.assertEqual(bundle.negative, "bad hands, extra limbs, bad feet, blurry")
+
+    def test_fixed_negative_empty_is_noop(self) -> None:
+        bundle = build_prompt(
+            user_prompt="x",
+            kind=KIND_SELFIE,
+            fixed_negative="  ",
+            global_negative="bad hands",
+        )
+        self.assertEqual(bundle.negative, "bad hands")
+
+
 if __name__ == "__main__":
     unittest.main()
