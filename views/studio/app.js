@@ -365,7 +365,15 @@ async function loadHistory() {
 
 /* ==================== 设置 ==================== */
 
+function workflowFilesFor(kind) {
+  // 目录即类型：selfie 只列 selfie/ 下的文件，以此类推，从机制上避免选错类型
+  const prefix = kind + "/";
+  return state.files.filter((name) => name.startsWith(prefix));
+}
+
 function fillWorkflowSelect(select, current) {
+  const kind = String(select.dataset.cfg || "").split(".")[0];
+  const files = workflowFilesFor(kind);
   select.innerHTML = "";
   if (!current) {
     // 没配工作流时给一个空选项，避免 <select> 自动选中第一项、保存时把“第一项”当成用户选择
@@ -374,13 +382,13 @@ function fillWorkflowSelect(select, current) {
     option.textContent = "（未设置，用默认）";
     select.appendChild(option);
   }
-  for (const name of state.files) {
+  for (const name of files) {
     const option = document.createElement("option");
     option.value = name;
     option.textContent = name;
     select.appendChild(option);
   }
-  if (current && !state.files.includes(current)) {
+  if (current && !files.includes(current)) {
     const option = document.createElement("option");
     option.value = current;
     option.textContent = current + "（缺失）";
