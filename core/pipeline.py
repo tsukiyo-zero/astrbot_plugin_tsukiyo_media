@@ -156,13 +156,8 @@ class ImagePipeline:
         profile = self.settings.profiles.get(kind) or KindProfile()
         if kind == KIND_TEXT2IMG:
             entry, _reason = select_model(self.catalog, request.prompt, request.model_key)
-            workflow = entry.workflow
-            profile = KindProfile(
-                workflow=workflow,
-                fixed_prompt=profile.fixed_prompt,
-                width=int(entry.author_params.get("width") or 0),
-                height=int(entry.author_params.get("height") or 0),
-            )
+            # 参数全部来自模型自己的工作流，这里只换文件
+            profile = KindProfile(workflow=entry.workflow, fixed_prompt=profile.fixed_prompt)
             return kind, entry, profile
 
         if not profile.workflow:
@@ -289,7 +284,7 @@ class ImagePipeline:
             prompt_mode=self.settings.prompt_mode,
             ipadapter_weight=profile.ipadapter_weight,
             denoise=profile.denoise,
-            sampler_override=(entry.author_params if entry else {}),
+            sampler_override={},
             identity_image=identity_image,
             source_image=source_image,
             ckpt_name=ckpt_name,

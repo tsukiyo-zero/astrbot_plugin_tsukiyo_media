@@ -15,15 +15,7 @@
                                                   "anime",
                                                   "华丽",
                                                   "通用"
-                                              ],
-                                     "author_params":  {
-                                                           "steps":  30,
-                                                           "cfg":  4.5,
-                                                           "sampler_name":  "euler_ancestral",
-                                                           "scheduler":  "normal",
-                                                           "width":  832,
-                                                           "height":  1216
-                                                       }
+                                              ]
                                  },
                    "miao":  {
                                 "label":  "miao 柔光",
@@ -39,15 +31,7 @@
                                              "写实",
                                              "柔光",
                                              "肤感"
-                                         ],
-                                "author_params":  {
-                                                      "steps":  30,
-                                                      "cfg":  4.5,
-                                                      "sampler_name":  "euler_ancestral",
-                                                      "scheduler":  "exponential",
-                                                      "width":  832,
-                                                      "height":  1216
-                                                  }
+                                         ]
                             },
                    "cat":  {
                                "label":  "cat 清漫",
@@ -61,15 +45,7 @@
                                "tags":  [
                                             "动漫",
                                             "干净"
-                                        ],
-                               "author_params":  {
-                                                     "steps":  30,
-                                                     "cfg":  6.0,
-                                                     "sampler_name":  "euler_ancestral",
-                                                     "scheduler":  "normal",
-                                                     "width":  832,
-                                                     "height":  1216
-                                                 }
+                                        ]
                            },
                    "fabricated":  {
                                       "label":  "fabricated 赛璐璐",
@@ -84,15 +60,7 @@
                                       "tags":  [
                                                    "动漫",
                                                    "赛璐璐"
-                                               ],
-                                      "author_params":  {
-                                                            "steps":  28,
-                                                            "cfg":  5.5,
-                                                            "sampler_name":  "euler_ancestral",
-                                                            "scheduler":  "normal",
-                                                            "width":  832,
-                                                            "height":  1216
-                                                        }
+                                               ]
                                   },
                    "illustrious":  {
                                        "label":  "illustrious 基础",
@@ -106,15 +74,7 @@
                                        "tags":  [
                                                     "动漫",
                                                     "基础模型"
-                                                ],
-                                       "author_params":  {
-                                                             "steps":  28,
-                                                             "cfg":  7.5,
-                                                             "sampler_name":  "euler_ancestral",
-                                                             "scheduler":  "normal",
-                                                             "width":  832,
-                                                             "height":  1216
-                                                         }
+                                                ]
                                    },
                    "lemon":  {
                                  "label":  "lemon 甜彩",
@@ -129,15 +89,7 @@
                                               "动漫",
                                               "明亮",
                                               "甜"
-                                          ],
-                                 "author_params":  {
-                                                       "steps":  25,
-                                                       "cfg":  5.5,
-                                                       "sampler_name":  "euler_ancestral",
-                                                       "scheduler":  "normal",
-                                                       "width":  832,
-                                                       "height":  1216
-                                                   }
+                                          ]
                              },
                    "novaflat":  {
                                     "label":  "novaflat 通透",
@@ -153,15 +105,7 @@
                                                  "动漫",
                                                  "通透",
                                                  "平涂"
-                                             ],
-                                    "author_params":  {
-                                                          "steps":  28,
-                                                          "cfg":  5.0,
-                                                          "sampler_name":  "euler_ancestral",
-                                                          "scheduler":  "normal",
-                                                          "width":  832,
-                                                          "height":  1216
-                                                      }
+                                             ]
                                 },
                    "pixel":  {
                                  "label":  "pixel 像素",
@@ -174,15 +118,7 @@
                                              ],
                                  "tags":  [
                                               "像素风"
-                                          ],
-                                 "author_params":  {
-                                                       "steps":  30,
-                                                       "cfg":  6.0,
-                                                       "sampler_name":  "euler_ancestral",
-                                                       "scheduler":  "normal",
-                                                       "width":  768,
-                                                       "height":  1280
-                                                   }
+                                          ]
                              },
                    "xxmix":  {
                                  "label":  "xxmix 写实",
@@ -197,15 +133,7 @@
                                  "tags":  [
                                               "写实",
                                               "人像"
-                                          ],
-                                 "author_params":  {
-                                                       "steps":  30,
-                                                       "cfg":  8.0,
-                                                       "sampler_name":  "dpmpp_2m",
-                                                       "scheduler":  "karras",
-                                                       "width":  768,
-                                                       "height":  1280
-                                                   }
+                                          ]
                              }
                }
 }
