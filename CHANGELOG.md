@@ -22,6 +22,7 @@
 - 三档工作流新增「固定负面词」（配置项 `<链路>.fixed_negative`）：顺序是 作者负向 → 全局负向 → 该链路固定负向 → 本次额外负向；留空不生效
 
 ### 修复
+- **默认模型被 LLM 的 tag 抢走**：用户说「给我画一只猫娘，蓝眼睛…」，LLM 在 prompt 里自己加了 `soft light`，风格表命中 `柔光|肤感|soft light` → 模型从默认的 `obsession` 换成了 `miao`（`realistic` / `photorealistic` 同理）。`select_model` 的风格匹配从 `prompt + hint` 改成 **只看 `hint`（用户原话）**，没有原话（页面 / API 直调）时才退回 prompt。用户嘴上说「用柔光 / 画个像素风」仍然生效，LLM 自己的 tag 不再影响选模
 - **“参考这张，把背景换成海边”被判成 edit**：`correct_kind` 只看“改写词”，句子里一旦出现“换成”就锁死 edit，哪怕整句是在说“照这张重画”。而 edit 是 img2img（重绘 30%），改不动背景/场景/构图/姿势——实测输出和原图几乎一样。现在先判“场景类改动”（背景 / 场景 / 构图 / 姿势 / 动作 / 视角 / 镜头 / 环境，含英文 `change the background` 之类）→ 一律 reference；再判局部改写词（改成 / 换成 / 变成 / 去掉 / 加个）→ edit；只有参考锚点（参考这张 / 照着 / 以这张）且没有局部改写词时才改判 reference。**“参考这张，把衣服改成白色”仍是 edit**（既保构图又改局部，这才是 img2img 的活）
 - **edit 改色几乎没变化（denoise 0.55 太保守）**：用户说“把衣服改成白色”，出来还是原来的衣服。用真实 QQ 图做过 0.55 / 0.65 / 0.70 / 0.75 对照，0.55 和 0.65 都改不动，0.70 能把背景、衣服里的白色一起改出来且姿势不走样。`edit/illustrious.json` 的 denoise 改为 **0.70**
 - **编辑链路会被拉伸变形**：`edit/illustrious.json` 里是 `ImageScale` 定死 832×1216 + `crop: disabled`，用户发 1024×1024 或 9:16 的图会被硬拉成 3:4（脸和手最容易糊）。改为 `ImageScaleToTotalPixels`（megapixels 1.0，lanczos），按像素总量缩放、**保持原图宽高比**
