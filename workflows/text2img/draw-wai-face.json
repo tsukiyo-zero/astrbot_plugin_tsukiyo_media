@@ -72,7 +72,7 @@
         "lora_godrays",
         1
       ],
-      "text": "masterpiece, best quality, anime illustration, semi-realistic anime painting, painterly rendering, visible brush strokes, hand-painted texture, expressive brushwork, soft textured shading, matte skin, natural skin tones, subtle color variation, warm reflected light, painterly shadows, delicate facial features, detailed eyes, layered hair strands, textured fabric, atmospheric perspective, warm sunset backlighting, soft rim light, cinematic composition, krenz, wlop"
+      "text": "masterpiece, best quality, high-end anime illustration, premium anime game CG, delicate anime facial features, expressive detailed eyes, soft natural skin shading, subtle blush, matte skin, natural skin tones, refined semi-painterly coloring, smooth color transitions, rich shadow tones, delicate hair strands, layered fabric folds, cinematic lighting, warm rim light, soft reflected light, atmospheric depth, beautiful color harmony, painterly rendering, krenz, wlop"
     },
     "_meta": {
       "title": "作者词：柔光厚涂基调（本次画面描述会追加在后面）"
@@ -85,7 +85,7 @@
         "lora_godrays",
         1
       ],
-      "text": "worst quality, low quality, bad anatomy, bad hands, extra fingers, 3d render, CGI, plastic skin, waxy skin, glossy skin, oily skin, porcelain doll, overly smooth skin, artificial highlights, excessive skin shine, oversharpened, airbrushed skin, watermark, text, signature, harsh flash"
+      "text": "worst quality, low quality, bad anatomy, bad hands, extra fingers, 3d render, CGI, plastic skin, waxy skin, glossy skin, oily skin, porcelain doll, overly smooth skin, artificial highlights, airbrushed skin, harsh flash, watermark, text, signature"
     },
     "_meta": {
       "title": "作者负向：压硬边/渲染感"
@@ -123,7 +123,7 @@
       ],
       "seed": 42,
       "steps": 28,
-      "cfg": 3.8,
+      "cfg": 4.5,
       "sampler_name": "euler_ancestral",
       "scheduler": "normal",
       "denoise": 1.0
@@ -195,7 +195,7 @@
       ],
       "seed": 43,
       "steps": 24,
-      "cfg": 3.8,
+      "cfg": 4.0,
       "sampler_name": "dpmpp_2m_sde",
       "scheduler": "karras",
       "denoise": 0.5
@@ -274,7 +274,7 @@
         "neg",
         0
       ],
-      "denoise": 0.25,
+      "denoise": 0.22,
       "feather": 6,
       "noise_mask": true,
       "force_inpaint": true,
