@@ -100,6 +100,36 @@ class TestSelectModel(unittest.TestCase):
         self.assertEqual(entry.key, CATALOG.default_key)
         self.assertEqual(reason, "default")
 
+    def test_llm_tags_do_not_pick_model(self) -> None:
+        """LLM 翻译出来的 tag 里常有 soft light / realistic，不能拿它选模。
+
+        真实案例：用户说“给我画一只猫娘…”，LLM 自己加了 `soft light`，
+        结果默认模型 obsession 被悄悄换成了 miao。
+        """
+        prompt = ("1girl, cat girl, blue cat ears, blue eyes, whiskers, bikini, "
+                  "kneeling, seiza, floor, simple background, soft light")
+        hint = "给我画一只猫娘，蓝眼睛，蓝耳朵，有胡须，穿着比基尼，跪坐在地上"
+        entry, reason = select_model(CATALOG, prompt, "", hint)
+        self.assertEqual(entry.key, CATALOG.default_key)
+        self.assertEqual(reason, "default")
+
+    def test_photoreal_tag_in_prompt_does_not_override_default(self) -> None:
+        entry, _ = select_model(
+            CATALOG, "photorealistic, realistic, soft light, 1girl", "", "画个猫娘"
+        )
+        self.assertEqual(entry.key, CATALOG.default_key)
+
+    def test_style_word_from_user_words_still_wins(self) -> None:
+        """用户在**原话**里说了风格词，仍然要生效（哪怕 prompt 里是别的风格）。"""
+        entry, reason = select_model(CATALOG, "a room, realistic, photorealistic", "", "用像素画")
+        self.assertEqual(entry.key, "pixel")
+        self.assertTrue(reason.startswith(("style:", "name:")))
+
+    def test_no_hint_falls_back_to_prompt_style(self) -> None:
+        """页面 / API 直调没有原话，退回用 prompt 自身的风格词。"""
+        entry, _ = select_model(CATALOG, "来个像素风的房间")
+        self.assertEqual(entry.key, "pixel")
+
     def test_unknown_key_raises(self) -> None:
         with self.assertRaises(RoutingError):
             CATALOG.get("不存在的模型")
