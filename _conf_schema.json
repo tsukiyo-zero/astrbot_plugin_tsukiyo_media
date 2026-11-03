@@ -108,6 +108,36 @@
       "type": "float",
       "default": 20,
       "hint": "超过这个时间就放弃翻译，直接用原文，避免卡住出图。"
+    },
+    "postprocess": {
+      "description": "出图后处理",
+      "type": "object",
+      "hint": "目标风格的局部对比度比底模直出高一倍以上，单纯调 CFG 补不上；后处理能缩短约 70% 差距。",
+      "items": {
+        "enabled": {
+          "description": "启用",
+          "type": "bool",
+          "default": true
+        },
+        "contrast": {
+          "description": "对比度",
+          "type": "float",
+          "default": 1.4,
+          "hint": "1.0 = 不改；1.4 是实测能接近参考图的档位"
+        },
+        "saturation": {
+          "description": "饱和度",
+          "type": "float",
+          "default": 0.9,
+          "hint": "提高对比度会连带显饱和，0.9 用来压回去"
+        },
+        "sharpen_percent": {
+          "description": "锐化强度",
+          "type": "int",
+          "default": 120,
+          "hint": "0 = 不锐化；120 接近 4x-UltraSharp 的观感"
+        }
+      }
     }
   },
   "text2img": {

@@ -129,6 +129,7 @@ class TsukiyoMediaPlugin(Star):
             strip_cjk=bool(generation.get("strip_non_english", False)),
             max_concurrent=int(generation.get("max_concurrent") or 1),
             filename_prefix=str(generation.get("filename_prefix") or "tsukiyo"),
+            postprocess=self._postprocess_settings(generation),
             job_timeout=float(comfy.get("job_timeout_seconds") or 180),
             profiles=self._build_profiles(cfg),
         )
@@ -163,6 +164,21 @@ class TsukiyoMediaPlugin(Star):
             return self.context.get_using_provider()
         except Exception:  # pragma: no cover - 环境相关
             return None
+
+    @staticmethod
+    def _postprocess_settings(generation: dict[str, Any]) -> dict[str, Any]:
+        """出图后处理（对比/饱和/锐化）；默认开，值来自配置。"""
+        pp = generation.get("postprocess") or {}
+        if not bool(pp.get("enabled", True)):
+            return {}
+        out = {
+            "contrast": float(pp.get("contrast", 1.4)),
+            "saturation": float(pp.get("saturation", 0.9)),
+            "sharpen_percent": int(pp.get("sharpen_percent", 120)),
+        }
+        if abs(out["contrast"] - 1.0) < 1e-3 and abs(out["saturation"] - 1.0) < 1e-3 and out["sharpen_percent"] <= 0:
+            return {}
+        return out
 
     def _build_profiles(self, cfg: dict[str, Any]) -> dict[str, KindProfile]:
         text2img = cfg.get("text2img") or {}

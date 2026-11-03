@@ -18,6 +18,7 @@ from ..backends.comfyui.client import ComfyUIClient
 from .catalog import ModelCatalog
 from .errors import BackendError, BindError, ConfigError, RoutingError, WorkflowNotFound
 from .imaging import compress_image_bytes
+from .postprocess import enhance_image
 from .prompt import build_prompt
 from .router import correct_kind, route_kind, select_model
 from .types import (
@@ -56,6 +57,8 @@ class PipelineSettings:
     strip_cjk: bool = False
     max_concurrent: int = 1
     filename_prefix: str = "tsukiyo"
+    #: 出图后处理参数（空 = 不做）
+    postprocess: dict = field(default_factory=dict)
     job_timeout: float = 180.0
     profiles: dict[str, KindProfile] = field(default_factory=dict)
 
@@ -337,6 +340,11 @@ class ImagePipeline:
                 suffix = Path(filename).suffix or ".png"
                 target = self.output_dir / f"tsukiyo_{stamp}_{prompt_id[:8]}_{uuid.uuid4().hex[:6]}{suffix}"
                 target.write_bytes(data)
+                if self.settings.postprocess:
+                    try:
+                        enhance_image(str(target), **self.settings.postprocess)
+                    except Exception:  # pragma: no cover - 后处理失败不能影响出图
+                        pass
                 saved.append(str(target))
         return saved
 
