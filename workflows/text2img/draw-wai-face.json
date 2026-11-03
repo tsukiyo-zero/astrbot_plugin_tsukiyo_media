@@ -85,7 +85,7 @@
         "lora_godrays",
         1
       ],
-      "text": "worst quality, low quality, bad anatomy, bad hands, extra fingers, 3d render, CGI, plastic skin, waxy skin, glossy skin, oily skin, porcelain doll, overly smooth skin, artificial highlights, airbrushed skin, harsh flash, watermark, text, signature"
+      "text": "worst quality, low quality, bad anatomy, bad hands, extra fingers, 3d render, CGI, plastic skin, waxy skin, glossy skin, oily skin, porcelain doll, overly smooth skin, artificial highlights, airbrushed skin, harsh flash, overexposed, blown out highlights, high key, too bright, washed out, glowing skin, specular bloom, overexposure, watermark, text, signature"
     },
     "_meta": {
       "title": "作者负向：压硬边/渲染感"
@@ -123,7 +123,7 @@
       ],
       "seed": 42,
       "steps": 28,
-      "cfg": 4.5,
+      "cfg": 4.0,
       "sampler_name": "euler_ancestral",
       "scheduler": "normal",
       "denoise": 1.0
