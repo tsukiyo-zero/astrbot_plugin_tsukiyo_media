@@ -20,8 +20,8 @@
         1
       ],
       "lora_name": "krenz_style.safetensors",
-      "strength_model": 0.34,
-      "strength_clip": 0.34
+      "strength_model": 0.35,
+      "strength_clip": 0.35
     },
     "_meta": {
       "title": "Krenz 厚涂（0.34，0.45 会出硬素描边）"
@@ -39,8 +39,8 @@
         1
       ],
       "lora_name": "sss_skin.safetensors",
-      "strength_model": 0.3,
-      "strength_clip": 0.3
+      "strength_model": 0.15,
+      "strength_clip": 0.15
     },
     "_meta": {
       "title": "皮肤次表面散射（0.30，再高会果冻感）"
@@ -58,8 +58,8 @@
         1
       ],
       "lora_name": "godrays_cinematic.safetensors",
-      "strength_model": 0.25,
-      "strength_clip": 0.25
+      "strength_model": 0.15,
+      "strength_clip": 0.15
     },
     "_meta": {
       "title": "逆光光束（0.25，0.45 会过曝吃掉笔触）"
@@ -72,7 +72,7 @@
         "lora_godrays",
         1
       ],
-      "text": "masterpiece, best quality, absurdres, illustration, painterly brushwork, visible soft brush strokes, soft facial modeling, smooth tonal gradation, soft shadow transition, subsurface scattering, fine individual hair strands, hair clumps, subtle skin texture, layered fabric folds, soft ambient bounce light, volumetric light, atmospheric haze, low contrast, pastel color, cel shading blended with oil painting texture, krenz, wlop"
+      "text": "masterpiece, best quality, anime illustration, semi-realistic anime painting, painterly rendering, visible brush strokes, hand-painted texture, expressive brushwork, soft textured shading, matte skin, natural skin tones, subtle color variation, warm reflected light, painterly shadows, delicate facial features, detailed eyes, layered hair strands, textured fabric, atmospheric perspective, warm sunset backlighting, soft rim light, cinematic composition, krenz, wlop"
     },
     "_meta": {
       "title": "作者词：柔光厚涂基调（本次画面描述会追加在后面）"
@@ -85,7 +85,7 @@
         "lora_godrays",
         1
       ],
-      "text": "easynegative, lowres, worst quality, bad anatomy, bad hands, extra limbs, extra fingers, deformed, blurry, ugly, watermark, text, signature, oversaturated, harsh flash, flat lighting, 3d, cgi, octane render, hard shadow border, sharp facial contour, harsh contrast, sketchy, hard edges"
+      "text": "worst quality, low quality, bad anatomy, bad hands, extra fingers, 3d render, CGI, plastic skin, waxy skin, glossy skin, oily skin, porcelain doll, overly smooth skin, artificial highlights, excessive skin shine, oversharpened, airbrushed skin, watermark, text, signature, harsh flash"
     },
     "_meta": {
       "title": "作者负向：压硬边/渲染感"
@@ -274,7 +274,7 @@
         "neg",
         0
       ],
-      "denoise": 0.4,
+      "denoise": 0.25,
       "feather": 6,
       "noise_mask": true,
       "force_inpaint": true,
