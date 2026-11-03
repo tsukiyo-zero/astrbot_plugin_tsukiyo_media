@@ -28,6 +28,7 @@ from .backends.comfyui.client import ComfyUIClient
 from .core.catalog import ModelCatalog
 from .core.errors import TsukiyoMediaError
 from .core.pipeline import ImagePipeline, KindProfile, PipelineSettings
+from .core.translate import PromptTranslator, has_cjk, maybe_translate
 from .page_api import PageAPI
 from .core.types import (
     KIND_EDIT,
@@ -140,12 +141,28 @@ class TsukiyoMediaPlugin(Star):
             history_path=self.data_dir / "history.json",
         )
         self.api = TsukiyoMediaAPI(self.pipeline, self.catalog)
+
+        # 中文描述 → 英文 tag（CLIP 读不懂中文，不转等于没描述）
+        self.translate_enabled = bool(generation.get("translate_cjk", True))
+        self.translate_timeout = float(generation.get("translate_timeout_seconds") or 20)
+        self.translator = PromptTranslator(
+            get_provider=self._current_provider,
+            log=lambda msg: logger.info("[TsukiyoMedia] %s", msg),
+        )
         logger.info(
-            "[TsukiyoMedia] 就绪：comfy=%s models=%s workflows=%s",
+            "[TsukiyoMedia] 就绪：comfy=%s models=%s workflows=%s 中文转 tag=%s",
             comfy.get("base_url") or "http://127.0.0.1:8188",
             len(self.catalog.keys()),
             workflow_dir,
+            "开" if self.translate_enabled else "关",
         )
+
+    def _current_provider(self) -> Any:
+        """拿 AstrBot 当前对话用的 LLM Provider（用于中文转 tag）。"""
+        try:
+            return self.context.get_using_provider()
+        except Exception:  # pragma: no cover - 环境相关
+            return None
 
     def _build_profiles(self, cfg: dict[str, Any]) -> dict[str, KindProfile]:
         text2img = cfg.get("text2img") or {}
@@ -349,6 +366,7 @@ class TsukiyoMediaPlugin(Star):
     async def _generate(self, request: ImageRequest) -> GenerationResult:
         if self.pipeline is None:
             raise TsukiyoMediaError("插件尚未初始化完成")
+        request = await self._translate_request(request)
         try:
             result = await self.pipeline.generate(request)
         except TsukiyoMediaError as exc:
@@ -367,6 +385,30 @@ class TsukiyoMediaPlugin(Star):
             )
         return result
 
+    async def _translate_request(self, request: ImageRequest) -> ImageRequest:
+        """提示词含中文时先转成英文 tag；转不了就保持原样（不阻塞出图）。"""
+        prompt = str(getattr(request, "prompt", "") or "")
+        if not has_cjk(prompt):
+            return request
+        try:
+            tags, ok = await maybe_translate(
+                getattr(self, "translator", None),
+                prompt,
+                enabled=bool(getattr(self, "translate_enabled", True)),
+                timeout=float(getattr(self, "translate_timeout", 20.0)),
+            )
+        except Exception as exc:  # pragma: no cover - 翻译失败不能影响出图
+            logger.warning("[TsukiyoMedia] 中文转 tag 出错：%s", exc)
+            return request
+        if not ok or not tags or tags == prompt:
+            logger.info("[TsukiyoMedia] 中文转 tag 未生效，按原文出图")
+            return request
+        logger.info("[TsukiyoMedia] 中文转 tag：%s -> %s", prompt[:40], tags[:80])
+        try:
+            return replace(request, prompt=tags)
+        except Exception:  # pragma: no cover
+            request.prompt = tags
+            return request
 
     async def _deliver(
         self,
