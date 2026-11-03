@@ -1,0 +1,108 @@
+{
+  "load": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "noobaiXL_epsilonPred075.safetensors"
+    },
+    "_meta": {
+      "title": "NoobAI-XL Epsilon-pred 0.75"
+    }
+  },
+  "clipl": {
+    "class_type": "CLIPSetLastLayer",
+    "inputs": {
+      "clip": [
+        "load",
+        1
+      ],
+      "stop_at_clip_layer": -2
+    },
+    "_meta": {
+      "title": "clip skip 2（NoobAI 示例 6/9 用 2）"
+    }
+  },
+  "pos": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "clipl",
+        0
+      ],
+      "text": "masterpiece, best quality, amazing quality"
+    },
+    "_meta": {
+      "title": "质量词；画面描述会追加在后面"
+    }
+  },
+  "neg": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "clipl",
+        0
+      ],
+      "text": "nsfw, worst quality, old, early, low quality, lowres, signature, username, logo, bad hands, mutated hands, bad anatomy, bad proportions, extra limbs, extra digit, extra legs, disfigured, missing arms, too many fingers, fused fingers, missing fingers, unclear eyes, watermark, text, 3d render, CGI, plastic skin"
+    }
+  },
+  "latent": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 832,
+      "height": 1216,
+      "batch_size": 1
+    }
+  },
+  "sample": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "load",
+        0
+      ],
+      "positive": [
+        "pos",
+        0
+      ],
+      "negative": [
+        "neg",
+        0
+      ],
+      "latent_image": [
+        "latent",
+        0
+      ],
+      "seed": 42,
+      "steps": 30,
+      "cfg": 4.5,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1.0
+    },
+    "_meta": {
+      "title": "官方推荐：Euler（其他采样器不保证）/ CFG 4~5 / 28~35 步"
+    }
+  },
+  "decode": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "sample",
+        0
+      ],
+      "vae": [
+        "load",
+        2
+      ]
+    }
+  },
+  "save": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "decode",
+        0
+      ],
+      "filename_prefix": "tsukiyo-noobai"
+    }
+  }
+}

@@ -186,6 +186,39 @@
         "厚涂",
         "风格化"
       ]
+    },
+    "noobai": {
+      "label": "NoobAI",
+      "group": "anime",
+      "desc": "NoobAI-XL EPS0.75 原版，官方参数（Euler/CFG4.5/30步/clipSkip2）",
+      "workflow": "text2img/draw-noobai.json",
+      "aliases": [
+        "noobai",
+        "诺拜",
+        "nb"
+      ],
+      "tags": [
+        "动漫",
+        "原版",
+        "通用"
+      ]
+    },
+    "noobai_xuer": {
+      "label": "NoobAI厚涂",
+      "group": "anime",
+      "desc": "NoobAI + XuEr 厚涂 LoRA（DPM++2M / CFG7 / 重绘0.42）",
+      "workflow": "text2img/draw-noobai-xuer.json",
+      "aliases": [
+        "noobai厚涂",
+        "诺拜厚涂",
+        "xuer",
+        "绪儿"
+      ],
+      "tags": [
+        "动漫",
+        "厚涂",
+        "XuEr"
+      ]
     }
   }
 }

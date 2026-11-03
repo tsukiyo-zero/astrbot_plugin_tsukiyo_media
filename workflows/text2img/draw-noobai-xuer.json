@@ -1,0 +1,190 @@
+{
+  "load": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "noobaiXL_epsilonPred075.safetensors"
+    }
+  },
+  "clipl": {
+    "class_type": "CLIPSetLastLayer",
+    "inputs": {
+      "clip": [
+        "load",
+        1
+      ],
+      "stop_at_clip_layer": -2
+    }
+  },
+  "lora": {
+    "class_type": "LoraLoader",
+    "inputs": {
+      "model": [
+        "load",
+        0
+      ],
+      "clip": [
+        "clipl",
+        0
+      ],
+      "lora_name": "xuer_thickpaint_v3.safetensors",
+      "strength_model": 0.85,
+      "strength_clip": 0.85
+    },
+    "_meta": {
+      "title": "XuEr 厚涂 LoRA（作者推荐 0.8~0.9）"
+    }
+  },
+  "pos": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "lora",
+        1
+      ],
+      "text": "XUER guangying, masterpiece, best quality, amazing quality, high-end anime illustration"
+    },
+    "_meta": {
+      "title": "触发词 XUER guangying；画面描述追加在后面"
+    }
+  },
+  "neg": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "lora",
+        1
+      ],
+      "text": "nsfw, worst quality, old, early, low quality, lowres, signature, username, logo, bad hands, mutated hands, bad anatomy, bad proportions, extra limbs, extra digit, extra legs, disfigured, missing arms, too many fingers, fused fingers, missing fingers, unclear eyes, watermark, text, 3d render, CGI, plastic skin"
+    }
+  },
+  "latent": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 832,
+      "height": 1216,
+      "batch_size": 1
+    }
+  },
+  "sample": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "lora",
+        0
+      ],
+      "positive": [
+        "pos",
+        0
+      ],
+      "negative": [
+        "neg",
+        0
+      ],
+      "latent_image": [
+        "latent",
+        0
+      ],
+      "seed": 42,
+      "steps": 28,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1.0
+    },
+    "_meta": {
+      "title": "XuEr 作者推荐：DPM++ 2M 厚涂更好 / CFG 7"
+    }
+  },
+  "decode": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "sample",
+        0
+      ],
+      "vae": [
+        "load",
+        2
+      ]
+    }
+  },
+  "up": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "image": [
+        "decode",
+        0
+      ],
+      "upscale_method": "lanczos",
+      "width": 1248,
+      "height": 1824,
+      "crop": "disabled"
+    }
+  },
+  "enc": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": [
+        "up",
+        0
+      ],
+      "vae": [
+        "load",
+        2
+      ]
+    }
+  },
+  "s2": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "lora",
+        0
+      ],
+      "positive": [
+        "pos",
+        0
+      ],
+      "negative": [
+        "neg",
+        0
+      ],
+      "latent_image": [
+        "enc",
+        0
+      ],
+      "seed": 43,
+      "steps": 20,
+      "cfg": 6.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 0.42
+    },
+    "_meta": {
+      "title": "作者推荐重绘率 0.42"
+    }
+  },
+  "d2": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "s2",
+        0
+      ],
+      "vae": [
+        "load",
+        2
+      ]
+    }
+  },
+  "save": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "d2",
+        0
+      ],
+      "filename_prefix": "tsukiyo-noobai-xuer"
+    }
+  }
+}
