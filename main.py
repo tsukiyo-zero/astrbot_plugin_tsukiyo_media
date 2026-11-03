@@ -242,6 +242,8 @@ class TsukiyoMediaPlugin(Star):
             height=_dim(opts.get("size"), 1),
             seed=_int_or(opts.get("seed"), -1),
             source="command",
+            # hint = 用户原话：按名选模（/img 用cat …）和链路纠正都靠它
+            hint=raw,
         )
         # 不再发固定的“正在画”占位文案：命令路径直接出图，想让她说话就走自然语言（LLM 工具）
         result = await self._generate(request)
