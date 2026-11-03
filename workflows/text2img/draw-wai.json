@@ -39,8 +39,8 @@
         1
       ],
       "lora_name": "sss_skin.safetensors",
-      "strength_model": 0.15,
-      "strength_clip": 0.15
+      "strength_model": 0.0,
+      "strength_clip": 0.0
     },
     "_meta": {
       "title": "皮肤次表面散射（0.30，再高会果冻感）"
@@ -72,7 +72,7 @@
         "lora_godrays",
         1
       ],
-      "text": "masterpiece, best quality, high-end anime illustration, premium anime game CG, delicate anime facial features, expressive detailed eyes, soft natural skin shading, subtle blush, matte skin, natural skin tones, refined semi-painterly coloring, smooth color transitions, rich shadow tones, delicate hair strands, layered fabric folds, cinematic lighting, warm rim light, soft reflected light, atmospheric depth, beautiful color harmony, painterly rendering, krenz, wlop"
+      "text": "masterpiece, best quality, high-end anime illustration, premium anime game CG, delicate anime facial features, expressive detailed eyes, soft natural skin shading, subtle blush, matte skin, natural skin tones, refined semi-painterly coloring, smooth color transitions, rich shadow tones, delicate hair strands, layered fabric folds, cinematic lighting, warm rim light, soft reflected light, atmospheric depth, beautiful color harmony, detailed anime rendering, krenz"
     },
     "_meta": {
       "title": "作者词：柔光厚涂基调（本次画面描述会追加在后面）"

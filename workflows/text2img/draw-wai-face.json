@@ -39,8 +39,8 @@
         1
       ],
       "lora_name": "sss_skin.safetensors",
-      "strength_model": 0.15,
-      "strength_clip": 0.15
+      "strength_model": 0.0,
+      "strength_clip": 0.0
     },
     "_meta": {
       "title": "皮肤次表面散射（0.30，再高会果冻感）"
@@ -72,7 +72,7 @@
         "lora_godrays",
         1
       ],
-      "text": "masterpiece, best quality, high-end anime illustration, premium anime game CG, delicate anime facial features, expressive detailed eyes, soft natural skin shading, subtle blush, matte skin, natural skin tones, refined semi-painterly coloring, smooth color transitions, rich shadow tones, delicate hair strands, layered fabric folds, cinematic lighting, warm rim light, soft reflected light, atmospheric depth, beautiful color harmony, painterly rendering, krenz, wlop"
+      "text": "masterpiece, best quality, high-end anime illustration, premium anime game CG, delicate anime facial features, expressive detailed eyes, soft natural skin shading, subtle blush, matte skin, natural skin tones, refined semi-painterly coloring, smooth color transitions, rich shadow tones, delicate hair strands, layered fabric folds, cinematic lighting, warm rim light, soft reflected light, atmospheric depth, beautiful color harmony, detailed anime rendering, krenz"
     },
     "_meta": {
       "title": "作者词：柔光厚涂基调（本次画面描述会追加在后面）"
@@ -267,14 +267,14 @@
       "sampler_name": "euler",
       "scheduler": "normal",
       "positive": [
-        "pos",
+        "facepos",
         0
       ],
       "negative": [
         "neg",
         0
       ],
-      "denoise": 0.22,
+      "denoise": 0.25,
       "feather": 6,
       "noise_mask": true,
       "force_inpaint": true,
@@ -297,6 +297,19 @@
     },
     "_meta": {
       "title": "人脸精修（crop_factor 2.0 / dilation 8 / denoise 0.40，只碰脸）"
+    }
+  },
+  "facepos": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "lora_godrays",
+        1
+      ],
+      "text": "beautiful anime face, delicate facial features, refined anime eyes, detailed eyelashes, soft natural skin shading, subtle blush, gentle facial shadows, smooth tonal transitions, soft reflected light on face, refined anime game CG face, harmonious facial proportions, delicate nose and lips, looking at viewer"
+    },
+    "_meta": {
+      "title": "脸部专用词：修脸只看这段，不受场景描述干扰"
     }
   }
 }
