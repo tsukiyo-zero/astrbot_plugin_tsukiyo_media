@@ -152,7 +152,10 @@ def select_model(
     """选模型，返回 (模型, 选择理由)。
 
     优先级：显式指定 > 原话里点名模型 > 风格关键词 > 默认。
-    模型名只看用户原话，不看翻译后的英文 tag——`cat girl` 会误命中 `cat` 模型。
+    模型名和风格词都只看**用户原话**，不看翻译后的英文 tag：
+    - `cat girl` 是普通 tag，不该把模型选成 `cat`
+    - `soft light` 是 LLM 自己加的常见 tag，曾经把用户设定的默认模型悄悄换成 miao
+    没有原话（页面 / API 直调）时退回用 prompt 本身。
     """
     if explicit:
         return catalog.get(explicit), "explicit"
@@ -162,7 +165,7 @@ def select_model(
         if hit:
             return entry, f"name:{hit}"
 
-    text = f"{prompt or ''} {hint or ''}".strip()
+    text = (hint or prompt or "").strip()
 
     for pattern, key in _STYLE_HINTS:
         if not pattern.search(text):
