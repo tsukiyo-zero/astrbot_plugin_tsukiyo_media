@@ -64,6 +64,22 @@ class TestSelectModel(unittest.TestCase):
         self.assertEqual(select_model(CATALOG, "来个像素风的房间")[0].key, "pixel")
         self.assertEqual(select_model(CATALOG, "写实照片，人像特写")[0].key, "xxmix")
 
+    def test_model_name_in_hint(self) -> None:
+        """用户原话里点名模型/别名时优先用它。"""
+        entry, reason = select_model(CATALOG, "a cat on a roof", hint="用柔光画一只猫")
+        self.assertEqual(entry.key, "miao")
+        self.assertTrue(reason.startswith("name:"))
+
+    def test_model_name_in_prompt(self) -> None:
+        entry, reason = select_model(CATALOG, "pixel art style room, 8bit")
+        self.assertEqual(entry.key, "pixel")
+        self.assertIn(reason, {"name:pixel", "style:像素|pixel|8bit|8-bit"})
+
+    def test_ascii_alias_needs_word_boundary(self) -> None:
+        """`cat` 不能命中 `concatenate` 这种词。"""
+        entry, _ = select_model(CATALOG, "a concatenate experiment")
+        self.assertNotEqual(entry.key, "cat")
+
     def test_default_when_no_hint(self) -> None:
         entry, reason = select_model(CATALOG, "一个女孩在看书")
         self.assertEqual(entry.key, CATALOG.default_key)

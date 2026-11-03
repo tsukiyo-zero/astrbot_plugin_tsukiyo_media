@@ -158,7 +158,9 @@ class ImagePipeline:
 
         profile = self.settings.profiles.get(kind) or KindProfile()
         if kind == KIND_TEXT2IMG:
-            entry, _reason = select_model(self.catalog, request.prompt, request.model_key)
+            entry, _reason = select_model(
+                self.catalog, request.prompt, request.model_key, request.hint
+            )
             # 参数全部来自模型自己的工作流，这里只换文件
             profile = KindProfile(workflow=entry.workflow, fixed_prompt=profile.fixed_prompt)
             return kind, entry, profile
