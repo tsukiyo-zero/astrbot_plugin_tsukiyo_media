@@ -1,0 +1,130 @@
+{
+  "load": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "noobaiXL_epsilonPred075.safetensors"
+    },
+    "_meta": {
+      "title": "NoobAI-XL Epsilon-pred 0.75（748cm LoRA 的作者原配底模）"
+    }
+  },
+  "clipl": {
+    "class_type": "CLIPSetLastLayer",
+    "inputs": {
+      "clip": [
+        "load",
+        1
+      ],
+      "stop_at_clip_layer": -2
+    },
+    "_meta": {
+      "title": "CLIP skip 2（作者示例参数，贡献厚涂块面感）"
+    }
+  },
+  "lora": {
+    "class_type": "LoraLoader",
+    "inputs": {
+      "model": [
+        "load",
+        0
+      ],
+      "clip": [
+        "clipl",
+        0
+      ],
+      "lora_name": "748cmSDXL.safetensors",
+      "strength_model": 1.0,
+      "strength_clip": 1.0
+    },
+    "_meta": {
+      "title": "748cm 风格 LoRA（作者用 1.0）"
+    }
+  },
+  "pos": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "lora",
+        1
+      ],
+      "text": "748cmstyle, best quality, masterpiece, high-end anime illustration"
+    },
+    "_meta": {
+      "title": "作者词只留触发词与质量词：厚涂块面由 LoRA 自身携带，加多了会变成海报感"
+    }
+  },
+  "neg": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "lora",
+        1
+      ],
+      "text": "worst quality, low quality, bad anatomy, bad hands, extra fingers, extra limbs, deformed, blurry, watermark, text, signature, jpeg artifacts, 3d render, CGI, photorealistic, plastic skin"
+    }
+  },
+  "latent": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 832,
+      "height": 1216,
+      "batch_size": 1
+    },
+    "_meta": {
+      "title": "作者示例分辨率 832×1216"
+    }
+  },
+  "sample": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "lora",
+        0
+      ],
+      "positive": [
+        "pos",
+        0
+      ],
+      "negative": [
+        "neg",
+        0
+      ],
+      "latent_image": [
+        "latent",
+        0
+      ],
+      "seed": 42,
+      "steps": 28,
+      "cfg": 5.5,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "normal",
+      "denoise": 1.0
+    },
+    "_meta": {
+      "title": "作者参数：Euler a / 28 步 / CFG 5.5（直出，无 hires）"
+    }
+  },
+  "decode": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "sample",
+        0
+      ],
+      "vae": [
+        "load",
+        2
+      ]
+    }
+  },
+  "save": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "decode",
+        0
+      ],
+      "filename_prefix": "tsukiyo-748cm"
+    }
+  }
+}

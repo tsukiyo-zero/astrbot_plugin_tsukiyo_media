@@ -170,6 +170,22 @@
         "柔光",
         "修脸"
       ]
+    },
+    "748cm": {
+      "label": "748cm",
+      "group": "anime",
+      "desc": "748cm 厚涂块面风格（NoobAI EPS0.75 + LoRA，作者原配参数）",
+      "workflow": "text2img/draw-748cm.json",
+      "aliases": [
+        "748cm",
+        "748",
+        "厚涂块面"
+      ],
+      "tags": [
+        "动漫",
+        "厚涂",
+        "风格化"
+      ]
     }
   }
 }
