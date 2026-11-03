@@ -81,9 +81,33 @@ class TestResolveRoles(unittest.TestCase):
         roles = resolve_roles(workflow)
         self.assertGreaterEqual(workflow[roles.sampler]["inputs"]["denoise"], 0.65)
 
-    def test_ambiguous_sampler_raises(self) -> None:
+    def test_two_stage_sampler_picks_base_pass(self) -> None:
+        """两段式 hires 有两个 KSampler：绑定要落在"从空 latent 出发"的第一段。"""
         workflow = load(DRAW)
-        workflow["extra"] = {"class_type": "KSampler", "inputs": {}}
+        base = next(nid for nid, n in workflow.items() if n.get("class_type") == "KSampler")
+        workflow["hires"] = {
+            "class_type": "KSampler",
+            "inputs": {"latent_image": [base, 0],
+                       "positive": workflow[base]["inputs"]["positive"],
+                       "negative": workflow[base]["inputs"]["negative"]},
+        }
+        roles = resolve_roles(workflow)
+        self.assertEqual(roles.sampler, base)
+
+    def test_no_empty_latent_and_multiple_samplers_raises(self) -> None:
+        """两个采样器都不从空 latent 出发 → 无法判断主采样器，应该报错。"""
+        workflow = {
+            "s1": {"class_type": "KSampler",
+                   "inputs": {"latent_image": ["enc", 0], "positive": ["p", 0], "negative": ["n", 0]}},
+            "s2": {"class_type": "KSampler",
+                   "inputs": {"latent_image": ["enc", 0], "positive": ["p", 0], "negative": ["n", 0]}},
+            "enc": {"class_type": "VAEEncode", "inputs": {"pixels": ["img", 0], "vae": ["ck", 2]}},
+            "p": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["ck", 1], "text": ""}},
+            "n": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["ck", 1], "text": ""}},
+            "img": {"class_type": "LoadImage", "inputs": {"image": "a.png"}},
+            "ck": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "x.safetensors"}},
+            "save": {"class_type": "SaveImage", "inputs": {"images": ["s2", 0]}},
+        }
         with self.assertRaises(BindError):
             resolve_roles(workflow)
 

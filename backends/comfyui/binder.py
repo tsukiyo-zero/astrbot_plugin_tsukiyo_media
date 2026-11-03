@@ -84,6 +84,24 @@ def _unique(nodes: dict[str, dict[str, Any]], classes: set[str], role: str) -> s
     return hits[0]
 
 
+def _pick_sampler(nodes: dict[str, dict[str, Any]]) -> str:
+    """选主采样器：两段式（hires）工作流里有多个 KSampler，取"从空 latent 出发"的那一段。
+
+    第一段负责构图与基础光影，提示词/种子/步数都该落在它身上；
+    第二段（hires 重绘）的参数由工作流 JSON 自带，不参与绑定。
+    """
+    hits = [nid for nid, node in nodes.items() if node.get("class_type") in _SAMPLERS]
+    if not hits:
+        raise BindError(f"工作流里找不到 采样器 节点（期望 class_type ∈ {sorted(_SAMPLERS)}）")
+    for nid in hits:
+        latent = _link(_inputs(nodes[nid]).get("latent_image"))
+        if latent in nodes and nodes[latent].get("class_type") in _EMPTY_LATENT:
+            return nid
+    if len(hits) > 1:
+        raise BindError(f"工作流里有 {len(hits)} 个采样器，且都不是从空 latent 出发，无法判断主采样器：{hits}")
+    return hits[0]
+
+
 @dataclass
 class WorkflowRoles:
     """一个工作流里各功能节点的 id。"""
@@ -110,7 +128,7 @@ def resolve_roles(workflow: dict[str, Any]) -> WorkflowRoles:
     if not nodes:
         raise BindError("工作流不是 ComfyUI API 格式（需要 节点id → {class_type, inputs}）")
 
-    sampler = _unique(nodes, _SAMPLERS, "采样器（KSampler）")
+    sampler = _pick_sampler(nodes)
     sampler_inputs = _inputs(nodes[sampler])
 
     positive = _link(sampler_inputs.get("positive"))
