@@ -1,119 +1,119 @@
 {
- "load": {
-  "class_type": "CheckpointLoaderSimple",
-  "inputs": {
-   "ckpt_name": "illustriousXL_v01.safetensors"
-  }
- },
- "ref": {
-  "class_type": "LoadImage",
-  "inputs": {
-   "image": "character_refs_normal.png"
-  },
-  "_meta": {
-   "title": "输入图（保留构图）"
-  }
- },
- "refscale": {
-  "class_type": "ImageScale",
-  "inputs": {
-   "image": [
-    "ref",
-    0
-   ],
-   "upscale_method": "lanczos",
-   "width": 832,
-   "height": 1216,
-   "crop": "disabled"
-  }
- },
- "enc": {
-  "class_type": "VAEEncode",
-  "inputs": {
-   "pixels": [
-    "refscale",
-    0
-   ],
-   "vae": [
-    "load",
-    2
-   ]
-  }
- },
- "pos": {
-  "class_type": "CLIPTextEncode",
-  "inputs": {
-   "clip": [
-    "load",
-    1
-   ],
-   "text": ""
-  },
-  "_meta": {
-   "title": "正面：目标画风/内容（动态传入）"
-  }
- },
- "neg": {
-  "class_type": "CLIPTextEncode",
-  "inputs": {
-   "clip": [
-    "load",
-    1
-   ],
-   "text": "lowres, bad anatomy, bad hands, worst quality, low quality, watermark, text, jpeg artifacts"
-  },
-  "_meta": {
-   "title": "负面：本次要求（动态传入）"
-  }
- },
- "sample": {
-  "class_type": "KSampler",
-  "inputs": {
-   "model": [
-    "load",
-    0
-   ],
-   "positive": [
-    "pos",
-    0
-   ],
-   "negative": [
-    "neg",
-    0
-   ],
-   "latent_image": [
-    "enc",
-    0
-   ],
-   "seed": 42,
-   "steps": 28,
-   "cfg": 6.5,
-   "sampler_name": "euler_ancestral",
-   "scheduler": "normal",
-   "denoise": 0.55
-  }
- },
- "decode": {
-  "class_type": "VAEDecode",
-  "inputs": {
-   "samples": [
-    "sample",
-    0
-   ],
-   "vae": [
-    "load",
-    2
-   ]
-  }
- },
- "save": {
-  "class_type": "SaveImage",
-  "inputs": {
-   "images": [
-    "decode",
-    0
-   ],
-   "filename_prefix": "qq-i2i"
-  }
- }
+    "load":  {
+                 "class_type":  "CheckpointLoaderSimple",
+                 "inputs":  {
+                                "ckpt_name":  "illustriousXL_v01.safetensors"
+                            }
+             },
+    "ref":  {
+                "class_type":  "LoadImage",
+                "inputs":  {
+                               "image":  "character_refs_normal.png"
+                           },
+                "_meta":  {
+                              "title":  "输入图（保留构图）"
+                          }
+            },
+    "refscale":  {
+                     "class_type":  "ImageScale",
+                     "inputs":  {
+                                    "image":  [
+                                                  "ref",
+                                                  0
+                                              ],
+                                    "upscale_method":  "lanczos",
+                                    "width":  832,
+                                    "height":  1216,
+                                    "crop":  "disabled"
+                                }
+                 },
+    "enc":  {
+                "class_type":  "VAEEncode",
+                "inputs":  {
+                               "pixels":  [
+                                              "refscale",
+                                              0
+                                          ],
+                               "vae":  [
+                                           "load",
+                                           2
+                                       ]
+                           }
+            },
+    "pos":  {
+                "class_type":  "CLIPTextEncode",
+                "inputs":  {
+                               "clip":  [
+                                            "load",
+                                            1
+                                        ],
+                               "text":  ""
+                           },
+                "_meta":  {
+                              "title":  "正面：目标画风/内容（动态传入）"
+                          }
+            },
+    "neg":  {
+                "class_type":  "CLIPTextEncode",
+                "inputs":  {
+                               "clip":  [
+                                            "load",
+                                            1
+                                        ],
+                               "text":  "lowres, bad anatomy, bad hands, worst quality, low quality, watermark, text, jpeg artifacts"
+                           },
+                "_meta":  {
+                              "title":  "负面：本次要求（动态传入）"
+                          }
+            },
+    "sample":  {
+                   "class_type":  "KSampler",
+                   "inputs":  {
+                                  "model":  [
+                                                "load",
+                                                0
+                                            ],
+                                  "positive":  [
+                                                   "pos",
+                                                   0
+                                               ],
+                                  "negative":  [
+                                                   "neg",
+                                                   0
+                                               ],
+                                  "latent_image":  [
+                                                       "enc",
+                                                       0
+                                                   ],
+                                  "seed":  42,
+                                  "steps":  28,
+                                  "cfg":  6.5,
+                                  "sampler_name":  "euler_ancestral",
+                                  "scheduler":  "normal",
+                                  "denoise":  0.55
+                              }
+               },
+    "decode":  {
+                   "class_type":  "VAEDecode",
+                   "inputs":  {
+                                  "samples":  [
+                                                  "sample",
+                                                  0
+                                              ],
+                                  "vae":  [
+                                              "load",
+                                              2
+                                          ]
+                              }
+               },
+    "save":  {
+                 "class_type":  "SaveImage",
+                 "inputs":  {
+                                "images":  [
+                                               "decode",
+                                               0
+                                           ],
+                                "filename_prefix":  "qq-i2i"
+                            }
+             }
 }

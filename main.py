@@ -407,19 +407,8 @@ class TsukiyoMediaPlugin(Star):
 
     # ------------------------------------------------------------------ 工具方法
     def _help_text(self) -> str:
-        return (
-            "本地 ComfyUI 生图（/img、/画图、/draw 三种写法等价）\n"
-            "/img models — 列出模型\n"
-            "/img status — ComfyUI 状态\n"
-            "/img last — 上一张的参数\n"
-            "/img <描述> — 自动判断文生图/自拍\n"
-            "/img selfie <描述> — 自拍（用固定人设参考图）\n"
-            "/img edit <描述> — 改图（需要带图）\n"
-            "/img ref <描述> — 参考图画新图（需要带图）\n"
-            "可选参数：model=<key> size=832x1216 seed=123 kind=selfie\n"
-            "例：/img model=miao 海边散步，黄昏逆光，全身\n"
-            "旧写法也支持：/draw miao 海边散步"
-        )
+        """帮助 = 模型图鉴：怎么选模型、怎么用，都在这张表里。"""
+        return self._models_text()
 
     def _models_text(self) -> str:
         if not self.catalog:
