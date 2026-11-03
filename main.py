@@ -240,7 +240,7 @@ class TsukiyoMediaPlugin(Star):
             seed=_int_or(opts.get("seed"), -1),
             source="command",
         )
-        yield event.plain_result("🖌 正在画，稍等一下…")
+        # 不再发固定的“正在画”占位文案：命令路径直接出图，想让她说话就走自然语言（LLM 工具）
         result = await self._generate(request)
         async for chunk in self._deliver(event, result, opts.get("caption", "")):
             yield chunk
