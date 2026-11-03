@@ -142,6 +142,54 @@ class TestCorrectKind(unittest.TestCase):
         self.assertEqual(correct_kind(KIND_SELFIE, request), KIND_SELFIE)
 
 
+class TestSceneChangeRouting(unittest.TestCase):
+    """场景/背景类改造走 reference；局部改造（衣服/头发/颜色）留在 edit。"""
+
+    def test_background_change_beats_edit_wording(self) -> None:
+        """真实案例：句子里同时有“参考这张”和“换成”，但改的是背景。"""
+        request = ImageRequest(
+            prompt="purple short hair, beach, sea, sand, ocean, sunset light, waves, outdoors",
+            kind="edit",
+            references=["a.png"],
+            hint="参考这张图，把背景换成海边",
+        )
+        self.assertEqual(correct_kind(KIND_EDIT, request), KIND_REFERENCE)
+
+    def test_background_change_without_reference_anchor(self) -> None:
+        request = ImageRequest(prompt="背景换成海边", kind="edit", references=["a.png"])
+        self.assertEqual(correct_kind(KIND_EDIT, request), KIND_REFERENCE)
+
+    def test_pose_change_goes_reference(self) -> None:
+        request = ImageRequest(prompt="换个姿势坐着", kind="edit", references=["a.png"])
+        self.assertEqual(correct_kind(KIND_EDIT, request), KIND_REFERENCE)
+
+    def test_reference_anchor_without_edit_word(self) -> None:
+        request = ImageRequest(prompt="beach, walking", kind="edit", references=["a.png"],
+                               hint="参考这张，画她在海边")
+        self.assertEqual(correct_kind(KIND_EDIT, request), KIND_REFERENCE)
+
+    def test_local_edits_stay_edit(self) -> None:
+        for hint in ("把衣服改成白色", "把头发变成黑色", "去掉帽子", "加个眼镜"):
+            with self.subTest(hint=hint):
+                request = ImageRequest(prompt="1girl, indoor", kind="edit",
+                                       references=["a.png"], hint=hint)
+                self.assertEqual(correct_kind(KIND_EDIT, request), KIND_EDIT)
+
+    def test_anchor_plus_local_edit_stays_edit(self) -> None:
+        """“参考这张，把衣服改成白色”既要保留构图又要改局部 → edit。"""
+        request = ImageRequest(prompt="white shirt", kind="edit", references=["a.png"],
+                               hint="参考这张图，把衣服改成白色")
+        self.assertEqual(correct_kind(KIND_EDIT, request), KIND_EDIT)
+
+    def test_auto_kind_prefers_reference_for_scene_words(self) -> None:
+        request = ImageRequest(prompt="把背景换成森林", references=["a.png"])
+        self.assertEqual(route_kind(request), KIND_REFERENCE)
+
+    def test_auto_kind_keeps_edit_for_local_words(self) -> None:
+        request = ImageRequest(prompt="把衣服换成蓝色", references=["a.png"])
+        self.assertEqual(route_kind(request), KIND_EDIT)
+
+
 if __name__ == "__main__":
     unittest.main()
 

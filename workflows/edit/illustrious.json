@@ -15,17 +15,19 @@
                           }
             },
     "refscale":  {
-                     "class_type":  "ImageScale",
+                     "class_type":  "ImageScaleToTotalPixels",
                      "inputs":  {
                                     "image":  [
                                                   "ref",
                                                   0
                                               ],
                                     "upscale_method":  "lanczos",
-                                    "width":  832,
-                                    "height":  1216,
-                                    "crop":  "disabled"
-                                }
+                                    "megapixels":  1.0,
+                                    "resolution_steps":  1
+                                },
+                     "_meta":  {
+                                   "title":  "按像素总量缩放（保持宽高比，不拉伸）"
+                               }
                  },
     "enc":  {
                 "class_type":  "VAEEncode",
@@ -90,7 +92,7 @@
                                   "cfg":  6.5,
                                   "sampler_name":  "euler_ancestral",
                                   "scheduler":  "normal",
-                                  "denoise":  0.55
+                                  "denoise":  0.7
                               }
                },
     "decode":  {

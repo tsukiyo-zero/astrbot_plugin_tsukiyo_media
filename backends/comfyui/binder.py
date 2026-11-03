@@ -256,7 +256,9 @@ def apply_values(
             latent_inputs = nodes[roles.empty_latent].setdefault("inputs", {})
             latent_inputs["width"] = int(values.width)
             latent_inputs["height"] = int(values.height)
-        elif roles.image_scale:
+        elif roles.image_scale and nodes[roles.image_scale].get("class_type") == "ImageScale":
+            # 只有 ImageScale 吃 width/height；ImageScaleToTotalPixels 按像素总量缩放，
+            # 塞 width/height 进去会变成非法输入。
             scale_inputs = nodes[roles.image_scale].setdefault("inputs", {})
             scale_inputs["width"] = int(values.width)
             scale_inputs["height"] = int(values.height)

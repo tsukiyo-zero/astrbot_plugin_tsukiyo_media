@@ -57,6 +57,30 @@ class TestResolveRoles(unittest.TestCase):
         with self.assertRaises(BindError):
             resolve_roles(broken)
 
+    def test_img2img_scales_by_total_pixels_not_fixed_size(self) -> None:
+        """编辑链路按像素总量缩放，保持用户原图宽高比（定死 832x1216 会拉伸）。"""
+        workflow = load(IMG2IMG)
+        roles = resolve_roles(workflow)
+        scale = workflow[roles.image_scale]
+        self.assertEqual(scale["class_type"], "ImageScaleToTotalPixels")
+        self.assertNotIn("width", scale["inputs"])
+
+    def test_img2img_size_override_does_not_corrupt_total_pixels_node(self) -> None:
+        workflow = load(IMG2IMG)
+        roles = resolve_roles(workflow)
+        prompt = apply_values(
+            workflow, roles, BindValues(positive="p", width=832, height=1216)
+        )
+        scale_inputs = prompt[roles.image_scale]["inputs"]
+        self.assertNotIn("width", scale_inputs)
+        self.assertNotIn("height", scale_inputs)
+
+    def test_img2img_denoise_strong_enough_for_visible_change(self) -> None:
+        """denoise 太低时“改衣服/改颜色”几乎不变（0.55 实测几乎无变化）。"""
+        workflow = load(IMG2IMG)
+        roles = resolve_roles(workflow)
+        self.assertGreaterEqual(workflow[roles.sampler]["inputs"]["denoise"], 0.65)
+
     def test_ambiguous_sampler_raises(self) -> None:
         workflow = load(DRAW)
         workflow["extra"] = {"class_type": "KSampler", "inputs": {}}
