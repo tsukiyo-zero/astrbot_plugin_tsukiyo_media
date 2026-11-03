@@ -18,9 +18,6 @@ from ..backends.comfyui.client import ComfyUIClient
 from .catalog import ModelCatalog
 from .errors import BackendError, BindError, ConfigError, RoutingError, WorkflowNotFound
 from .imaging import compress_image_bytes
-
-HISTORY_LIMIT = 60
-logger = logging.getLogger(__name__)
 from .prompt import build_prompt
 from .router import correct_kind, route_kind, select_model
 from .types import (
@@ -31,6 +28,9 @@ from .types import (
     GenerationResult,
     ImageRequest,
 )
+
+HISTORY_LIMIT = 60
+logger = logging.getLogger(__name__)
 
 
 @dataclass
