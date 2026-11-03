@@ -77,20 +77,36 @@ def correct_kind(kind: str, request: ImageRequest) -> str:
     return kind
 
 
-def _name_in_text(entry: ModelEntry, text: str) -> str:
-    """模型 key/别名是否出现在文本里；返回命中的那个词，没命中返回空串。
+#: 点名模型时的引导词：用/拿/换成/改成/要/model=
+_NAME_LEAD_RE = re.compile(r"(?:用|拿|换成|改成|要|模型=)\s*([a-z0-9_\-]+)", re.I)
+#: 「xxx风格 / xxx画风」
+_NAME_STYLE_RE = re.compile(r"([a-z0-9_\-]+)\s*(?:风格|画风)", re.I)
 
-    英文按词边界匹配（避免 `cat` 命中 `concatenate`），中文按子串匹配。
+
+def _name_in_hint(entry: ModelEntry, hint: str) -> str:
+    """用户原话里是否点名了这个模型，返回命中的词。
+
+    - 中文别名：直接子串命中（“柔光”“像素”这种词不会误伤）
+    - 英文 key：必须带引导词（用 cat / cat 风格 / model=cat），
+      否则 `cat girl` 这种普通 tag 会把 `cat` 模型误命中
     """
-    lowered = text.casefold()
+    if not hint:
+        return ""
     for candidate in [entry.key, *entry.aliases]:
         name = str(candidate or "").strip()
         if len(name) < 2:
             continue
         if name.isascii():
-            if re.search(rf"(?<![a-z0-9]){re.escape(name.casefold())}(?![a-z0-9])", lowered):
+            pattern = re.escape(name)
+            if _NAME_LEAD_RE.search(hint) and re.search(
+                rf"(?:用|拿|换成|改成|要|模型=)\s*{pattern}(?![a-z0-9])", hint, re.I
+            ):
                 return name
-        elif name in text:
+            if _NAME_STYLE_RE.search(hint) and re.search(
+                rf"{pattern}\s*(?:风格|画风)", hint, re.I
+            ):
+                return name
+        elif name in hint:
             return name
     return ""
 
@@ -103,18 +119,18 @@ def select_model(
 ) -> tuple[ModelEntry, str]:
     """选模型，返回 (模型, 选择理由)。
 
-    优先级：显式指定 > 文本里点名了模型 > 风格关键词 > 默认。
-    hint 是用户原话——模型翻译成英文 tag 后，画风词（“像素”“柔光”）容易丢，原话更可靠。
+    优先级：显式指定 > 原话里点名模型 > 风格关键词 > 默认。
+    模型名只看用户原话，不看翻译后的英文 tag——`cat girl` 会误命中 `cat` 模型。
     """
     if explicit:
         return catalog.get(explicit), "explicit"
 
+    for entry in catalog.items():
+        hit = _name_in_hint(entry, hint)
+        if hit:
+            return entry, f"name:{hit}"
+
     text = f"{prompt or ''} {hint or ''}".strip()
-    if text:
-        for entry in catalog.items():
-            hit = _name_in_text(entry, text)
-            if hit:
-                return entry, f"name:{hit}"
 
     for pattern, key in _STYLE_HINTS:
         if not pattern.search(text):

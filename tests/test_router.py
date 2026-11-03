@@ -80,6 +80,21 @@ class TestSelectModel(unittest.TestCase):
         entry, _ = select_model(CATALOG, "a concatenate experiment")
         self.assertNotEqual(entry.key, "cat")
 
+    def test_ascii_key_not_matched_from_translated_tags(self) -> None:
+        """`cat girl` 是普通 tag，不能把模型选成 cat。"""
+        entry, _ = select_model(CATALOG, "pixel art, 8bit, cat girl, cat ears")
+        self.assertNotEqual(entry.key, "cat")
+        self.assertEqual(entry.key, "pixel")
+
+    def test_ascii_key_with_lead_word(self) -> None:
+        entry, reason = select_model(CATALOG, "a room", hint="用cat画一个房间")
+        self.assertEqual(entry.key, "cat")
+        self.assertTrue(reason.startswith("name:"))
+
+    def test_chinese_alias_from_hint(self) -> None:
+        entry, _ = select_model(CATALOG, "a cat on a roof", hint="画个像素猫娘")
+        self.assertEqual(entry.key, "pixel")
+
     def test_default_when_no_hint(self) -> None:
         entry, reason = select_model(CATALOG, "一个女孩在看书")
         self.assertEqual(entry.key, CATALOG.default_key)
