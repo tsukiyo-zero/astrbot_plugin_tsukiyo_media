@@ -77,16 +77,47 @@ def correct_kind(kind: str, request: ImageRequest) -> str:
     return kind
 
 
+def _name_in_text(entry: ModelEntry, text: str) -> str:
+    """模型 key/别名是否出现在文本里；返回命中的那个词，没命中返回空串。
+
+    英文按词边界匹配（避免 `cat` 命中 `concatenate`），中文按子串匹配。
+    """
+    lowered = text.casefold()
+    for candidate in [entry.key, *entry.aliases]:
+        name = str(candidate or "").strip()
+        if len(name) < 2:
+            continue
+        if name.isascii():
+            if re.search(rf"(?<![a-z0-9]){re.escape(name.casefold())}(?![a-z0-9])", lowered):
+                return name
+        elif name in text:
+            return name
+    return ""
+
+
 def select_model(
     catalog: ModelCatalog,
     prompt: str,
     explicit: str = "",
+    hint: str = "",
 ) -> tuple[ModelEntry, str]:
-    """选模型，返回 (模型, 选择理由)。显式指定优先，其次风格关键词，最后默认。"""
+    """选模型，返回 (模型, 选择理由)。
+
+    优先级：显式指定 > 文本里点名了模型 > 风格关键词 > 默认。
+    hint 是用户原话——模型翻译成英文 tag 后，画风词（“像素”“柔光”）容易丢，原话更可靠。
+    """
     if explicit:
         return catalog.get(explicit), "explicit"
+
+    text = f"{prompt or ''} {hint or ''}".strip()
+    if text:
+        for entry in catalog.items():
+            hit = _name_in_text(entry, text)
+            if hit:
+                return entry, f"name:{hit}"
+
     for pattern, key in _STYLE_HINTS:
-        if not pattern.search(prompt or ""):
+        if not pattern.search(text):
             continue
         try:
             return catalog.get(key), f"style:{pattern.pattern[:24]}"

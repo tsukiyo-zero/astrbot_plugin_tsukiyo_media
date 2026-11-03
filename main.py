@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 import re
 import time
 from pathlib import Path
@@ -67,6 +68,8 @@ class TsukiyoMediaPlugin(Star):
         self.client: ComfyUIClient | None = None
         self.pipeline: ImagePipeline | None = None
         self.api: TsukiyoMediaAPI | None = None
+        #: 每个会话上一条生成请求，用于“重画 / 换个模型”
+        self._last_jobs: dict[str, ImageRequest] = {}
         self._init_runtime()
 
         # 插件可视化视图的后端 API：只在启动时注册一次（/img reload 不重复注册）
@@ -242,8 +245,65 @@ class TsukiyoMediaPlugin(Star):
         )
         # 不再发固定的“正在画”占位文案：命令路径直接出图，想让她说话就走自然语言（LLM 工具）
         result = await self._generate(request)
+        if result.ok:
+            self._remember_job(event, request)
         async for chunk in self._deliver(event, result, opts.get("caption", "")):
             yield chunk
+        if result.ok and self.catalog is not None:
+            yield event.plain_result(self._menu_text())
+
+    def _menu_text(self) -> str:
+        """出图后的文字菜单（QQ 官方机器人不支持按钮，只能给可回复的词）。"""
+        names = [entry.label for entry in self.catalog.items()][:6]
+        return "想换风格就回：换" + " / 换".join(names) + "；想再抽一张就回：重画"
+
+    # ------------------------------------------------------------------ 重画
+    def _remember_job(self, event: AstrMessageEvent, request: ImageRequest) -> None:
+        umo = str(getattr(event, "unified_msg_origin", "") or "")
+        if umo:
+            self._last_jobs[umo] = request
+            if len(self._last_jobs) > 200:  # 简易上限，避免无限增长
+                self._last_jobs.pop(next(iter(self._last_jobs)))
+
+    def _model_from_text(self, text: str) -> str:
+        """从“换柔光 / 用像素”这类短句里找出模型 key；找不到返回空。"""
+        if self.catalog is None:
+            return ""
+        body = re.sub(r"^(换成|换|用|改成)", "", text).strip()
+        if not body:
+            return ""
+        try:
+            return self.catalog.get(body).key
+        except Exception:  # noqa: BLE001 - 不是模型名就当没说
+            return ""
+
+    @filter.event_message_type(filter.EventMessageType.ALL)
+    async def regenerate_handler(self, event: AstrMessageEvent) -> None:
+        """「重画」「换柔光」这类短句：拿上一条请求重跑一次。"""
+        text = str(getattr(event, "message_str", "") or "").strip()
+        if not text or len(text) > 8 or text.startswith(("/", "／")):
+            return
+        umo = str(getattr(event, "unified_msg_origin", "") or "")
+        job = self._last_jobs.get(umo)
+        if job is None:
+            return
+
+        if text in {"重画", "再来一张", "再画一张", "再抽一张"}:
+            model_key = job.model_key
+        else:
+            model_key = self._model_from_text(text)
+            if not model_key:
+                return
+
+        request = replace(job, seed=-1, model_key=model_key, hint=text)
+        try:
+            result = await self._generate(request)
+            await self._send_result(event, result, "")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("[TsukiyoMedia] 重画失败：%s", exc)
+            return
+        event.stop_event()
+
 
     # ------------------------------------------------------------------ LLM 工具
     @filter.llm_tool(name="tsukiyo_image_generate")
@@ -278,6 +338,8 @@ class TsukiyoMediaPlugin(Star):
             hint=str(getattr(event, "message_str", "") or ""),
         )
         result = await self._generate(request)
+        if result.ok:
+            self._remember_job(event, request)
         result.sent = await self._send_result(event, result, str(caption or ""))
         return json.dumps(result.to_receipt(), ensure_ascii=False)
 
