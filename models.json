@@ -152,6 +152,24 @@
         "柔光",
         "人像"
       ]
+    },
+    "wai_face": {
+      "label": "厚涂精修",
+      "group": "anime",
+      "desc": "柔光厚涂 + FaceDetailer 修脸（需 Impact Pack）",
+      "workflow": "text2img/draw-wai-face.json",
+      "aliases": [
+        "厚涂精修",
+        "修脸",
+        "wai_face",
+        "精修"
+      ],
+      "tags": [
+        "动漫",
+        "厚涂",
+        "柔光",
+        "修脸"
+      ]
     }
   }
 }

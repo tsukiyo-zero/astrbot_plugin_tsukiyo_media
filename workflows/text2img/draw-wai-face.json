@@ -1,0 +1,302 @@
+{
+  "load": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "waiIllustriousSDXL_v170.safetensors"
+    },
+    "_meta": {
+      "title": "WAI-Illustrious v17"
+    }
+  },
+  "lora_krenz": {
+    "class_type": "LoraLoader",
+    "inputs": {
+      "model": [
+        "load",
+        0
+      ],
+      "clip": [
+        "load",
+        1
+      ],
+      "lora_name": "krenz_style.safetensors",
+      "strength_model": 0.34,
+      "strength_clip": 0.34
+    },
+    "_meta": {
+      "title": "Krenz 厚涂（0.34，0.45 会出硬素描边）"
+    }
+  },
+  "lora_sss": {
+    "class_type": "LoraLoader",
+    "inputs": {
+      "model": [
+        "lora_krenz",
+        0
+      ],
+      "clip": [
+        "lora_krenz",
+        1
+      ],
+      "lora_name": "sss_skin.safetensors",
+      "strength_model": 0.3,
+      "strength_clip": 0.3
+    },
+    "_meta": {
+      "title": "皮肤次表面散射（0.30，再高会果冻感）"
+    }
+  },
+  "lora_godrays": {
+    "class_type": "LoraLoader",
+    "inputs": {
+      "model": [
+        "lora_sss",
+        0
+      ],
+      "clip": [
+        "lora_sss",
+        1
+      ],
+      "lora_name": "godrays_cinematic.safetensors",
+      "strength_model": 0.25,
+      "strength_clip": 0.25
+    },
+    "_meta": {
+      "title": "逆光光束（0.25，0.45 会过曝吃掉笔触）"
+    }
+  },
+  "pos": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "lora_godrays",
+        1
+      ],
+      "text": "masterpiece, best quality, absurdres, illustration, painterly brushwork, visible soft brush strokes, soft facial modeling, smooth tonal gradation, soft shadow transition, subsurface scattering, fine individual hair strands, hair clumps, subtle skin texture, layered fabric folds, soft ambient bounce light, volumetric light, atmospheric haze, low contrast, pastel color, cel shading blended with oil painting texture, krenz, wlop"
+    },
+    "_meta": {
+      "title": "作者词：柔光厚涂基调（本次画面描述会追加在后面）"
+    }
+  },
+  "neg": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "lora_godrays",
+        1
+      ],
+      "text": "easynegative, lowres, worst quality, bad anatomy, bad hands, extra limbs, extra fingers, deformed, blurry, ugly, watermark, text, signature, oversaturated, harsh flash, flat lighting, 3d, cgi, octane render, hard shadow border, sharp facial contour, harsh contrast, sketchy, hard edges"
+    },
+    "_meta": {
+      "title": "作者负向：压硬边/渲染感"
+    }
+  },
+  "latent": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 832,
+      "height": 1216,
+      "batch_size": 1
+    },
+    "_meta": {
+      "title": "基础构图分辨率"
+    }
+  },
+  "sample": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "lora_godrays",
+        0
+      ],
+      "positive": [
+        "pos",
+        0
+      ],
+      "negative": [
+        "neg",
+        0
+      ],
+      "latent_image": [
+        "latent",
+        0
+      ],
+      "seed": 42,
+      "steps": 28,
+      "cfg": 3.8,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "normal",
+      "denoise": 1.0
+    },
+    "_meta": {
+      "title": "第一段：构图/光影（CFG 3.8，别用 4.2 会发硬）"
+    }
+  },
+  "decode": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "sample",
+        0
+      ],
+      "vae": [
+        "load",
+        2
+      ]
+    }
+  },
+  "up": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "image": [
+        "decode",
+        0
+      ],
+      "upscale_method": "lanczos",
+      "width": 1248,
+      "height": 1824,
+      "crop": "disabled"
+    },
+    "_meta": {
+      "title": "放大到成图尺寸（插件会把这里的宽高替换成请求值）"
+    }
+  },
+  "enc": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": [
+        "up",
+        0
+      ],
+      "vae": [
+        "load",
+        2
+      ]
+    }
+  },
+  "sample2": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "lora_godrays",
+        0
+      ],
+      "positive": [
+        "pos",
+        0
+      ],
+      "negative": [
+        "neg",
+        0
+      ],
+      "latent_image": [
+        "enc",
+        0
+      ],
+      "seed": 43,
+      "steps": 24,
+      "cfg": 3.8,
+      "sampler_name": "dpmpp_2m_sde",
+      "scheduler": "karras",
+      "denoise": 0.5
+    },
+    "_meta": {
+      "title": "第二段 hires 重绘（denoise 0.50 + SDE，细节 +61%）"
+    }
+  },
+  "decode2": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "sample2",
+        0
+      ],
+      "vae": [
+        "load",
+        2
+      ]
+    }
+  },
+  "save": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "face",
+        0
+      ],
+      "filename_prefix": "tsukiyo-wai-face"
+    },
+    "_meta": {
+      "title": "只保存 hires 结果"
+    }
+  },
+  "det": {
+    "class_type": "UltralyticsDetectorProvider",
+    "inputs": {
+      "model_name": "bbox/face_yolov8m.pt"
+    },
+    "_meta": {
+      "title": "人脸检测（Impact Subpack 提供，需要 models/ultralytics/bbox/face_yolov8m.pt）"
+    }
+  },
+  "face": {
+    "class_type": "FaceDetailer",
+    "inputs": {
+      "image": [
+        "decode2",
+        0
+      ],
+      "model": [
+        "lora_godrays",
+        0
+      ],
+      "clip": [
+        "lora_godrays",
+        1
+      ],
+      "vae": [
+        "load",
+        2
+      ],
+      "guide_size": 768,
+      "guide_size_for": true,
+      "max_size": 1024,
+      "seed": 44,
+      "steps": 24,
+      "cfg": 4.0,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "positive": [
+        "pos",
+        0
+      ],
+      "negative": [
+        "neg",
+        0
+      ],
+      "denoise": 0.4,
+      "feather": 6,
+      "noise_mask": true,
+      "force_inpaint": true,
+      "bbox_threshold": 0.55,
+      "bbox_dilation": 8,
+      "bbox_crop_factor": 2.0,
+      "sam_detection_hint": "center-1",
+      "sam_dilation": 0,
+      "sam_threshold": 0.93,
+      "sam_bbox_expansion": 0,
+      "sam_mask_hint_threshold": 0.7,
+      "sam_mask_hint_use_negative": "False",
+      "drop_size": 10,
+      "bbox_detector": [
+        "det",
+        0
+      ],
+      "wildcard": "",
+      "cycle": 1
+    },
+    "_meta": {
+      "title": "人脸精修（crop_factor 2.0 / dilation 8 / denoise 0.40，只碰脸）"
+    }
+  }
+}
