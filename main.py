@@ -198,46 +198,16 @@ class TsukiyoMediaPlugin(Star):
     # ------------------------------------------------------------------ 命令
     @filter.command("img", alias={"画图", "draw"})
     async def img_command(self, event: AstrMessageEvent):
-        """本地 ComfyUI 生图：/img [selfie|edit|ref] [model=key] [size=832x1216] [seed=1] 描述"""
+        """本地 ComfyUI 生图：/img [model=key] [size=832x1216] [seed=1] 描述"""
         raw = str(getattr(event, "message_str", "") or "")
         # /draw 是旧插件的命令，这里做兼容：/draw <模型key> <描述>
         invoked_draw = bool(re.match(r"^\s*/?draw\b", raw, flags=re.I))
         body = re.sub(r"^\s*/?(?:img|画图|draw)\b", "", raw, flags=re.I).strip()
         head = body.split()[0].lower() if body.split() else ""
 
-        if head in {"", "help", "帮助", "说明", "?", "？"}:
+        if head in {"", "help", "帮助", "说明", "?", "？", "models", "模型", "列表", "list"}:
             yield event.plain_result(self._help_text())
             return
-        if head in {"models", "模型", "列表", "list"}:
-            yield event.plain_result(self._models_text())
-            return
-        if head in {"status", "状态"}:
-            yield event.plain_result(await self._status_text())
-            return
-        if head in {"last", "上一张"}:
-            yield event.plain_result(self._last_text())
-            return
-        if head in {"reload", "重载"}:
-            if not event.is_admin():
-                yield event.plain_result("只有管理员能重载配置。")
-                return
-            try:
-                self._init_runtime()
-                yield event.plain_result("已重载：模型目录 / 工作流 / ComfyUI 连接配置。")
-            except TsukiyoMediaError as exc:
-                yield event.plain_result(f"重载失败：{exc}")
-            return
-
-        kind_hint = ""
-        if head in {"selfie", "自拍"}:
-            kind_hint = KIND_SELFIE
-            body = body[len(body.split()[0]):].strip()
-        elif head in {"edit", "改图", "编辑"}:
-            kind_hint = KIND_EDIT
-            body = body[len(body.split()[0]):].strip()
-        elif head in {"ref", "reference", "参考", "图生图"}:
-            kind_hint = KIND_REFERENCE
-            body = body[len(body.split()[0]):].strip()
 
         prompt, opts = self._parse_options(body)
         if invoked_draw and not opts.get("model"):
@@ -250,7 +220,7 @@ class TsukiyoMediaPlugin(Star):
                 except Exception:  # noqa: BLE001 - 不是模型名就当普通描述
                     pass
         if not prompt:
-            yield event.plain_result("请描述画面内容，例如：/img selfie 在海边散步，黄昏逆光")
+            yield event.plain_result("请描述画面内容，例如：/img 在海边散步，黄昏逆光")
             return
 
         blocked = self._blocked_reason(event, prompt)
@@ -259,13 +229,10 @@ class TsukiyoMediaPlugin(Star):
             return
 
         references = await self._collect_references(event)
-        if kind_hint in (KIND_EDIT, KIND_REFERENCE) and not references:
-            yield event.plain_result("这个用法需要带一张图（或引用一张图）。")
-            return
 
         request = ImageRequest(
             prompt=prompt,
-            kind=kind_hint or normalize_kind(opts.get("kind", "")),
+            kind=normalize_kind(opts.get("kind", "")),
             model_key=opts.get("model", ""),
             references=references,
             width=_dim(opts.get("size"), 0),
@@ -376,34 +343,6 @@ class TsukiyoMediaPlugin(Star):
             return False
         await event.send(MessageChain(chain))
         return bool(result.ok)
-
-    async def _status_text(self) -> str:
-        if self.client is None:
-            return "插件未初始化。"
-        try:
-            stats = await self.client.system_stats()
-            queue = await self.client.queue_state()
-        except TsukiyoMediaError as exc:
-            return f"ComfyUI 连不上：{exc}"
-        device = (stats.get("devices") or [{}])[0]
-        vram_total = float(device.get("vram_total") or 0) / (1024**3)
-        vram_free = float(device.get("vram_free") or 0) / (1024**3)
-        running = len(queue.get("queue_running") or ())
-        pending = len(queue.get("queue_pending") or ())
-        return (
-            f"ComfyUI {stats.get('system', {}).get('comfyui_version', '?')}\n"
-            f"显存 {vram_free:.1f}/{vram_total:.1f} GB\n"
-            f"队列 运行 {running} / 等待 {pending}\n"
-            f"模型 {len(self.catalog.keys() if self.catalog else [])} 个，默认 {self.catalog.default_key if self.catalog else '-'}"
-        )
-
-    def _last_text(self) -> str:
-        last = self.api.last_result if self.api else None
-        if last is None:
-            return "还没有出过图。"
-        payload = last.to_receipt()
-        payload["output"] = last.paths[-1] if last.paths else ""
-        return json.dumps(payload, ensure_ascii=False, indent=2)
 
     # ------------------------------------------------------------------ 工具方法
     def _help_text(self) -> str:
