@@ -27,6 +27,7 @@ from .api import TsukiyoMediaAPI
 from .backends.comfyui.client import ComfyUIClient
 from .core.catalog import ModelCatalog
 from .core.errors import TsukiyoMediaError
+from .core.imaging import compress_image_bytes
 from .core.pipeline import ImagePipeline, KindProfile, PipelineSettings
 from .core.translate import PromptTranslator, has_cjk, maybe_translate
 from .page_api import PageAPI
@@ -442,7 +443,7 @@ class TsukiyoMediaPlugin(Star):
         if text:
             yield event.plain_result(text)
         for path in result.paths:
-            yield event.image_result(path)
+            yield event.image_result(self._send_ready_path(path, event))
 
     async def _send_result(
         self, event: AstrMessageEvent, result: GenerationResult, caption: str = ""
@@ -460,11 +461,47 @@ class TsukiyoMediaPlugin(Star):
             if text:
                 chain.append(Plain(text))
             for path in result.paths:
-                chain.append(Image.fromFileSystem(path))
+                chain.append(Image.fromFileSystem(self._send_ready_path(path, event)))
         if not chain:
             return False
         await event.send(MessageChain(chain))
         return bool(result.ok)
+
+    def _send_ready_path(self, path: str, event: AstrMessageEvent | None = None) -> str:
+        """QQ 官方接口对图片体积敏感：base64 会再涨 1.33 倍，过大时先压成 JPEG。
+
+        返回可直接发送的路径；压缩失败或不需要压就返回原路径，绝不影响出图。
+        """
+        target = Path(str(path))
+        try:
+            size = target.stat().st_size
+        except OSError:
+            return str(path)
+        try:
+            platform = str(event.get_platform_name() or "") if event is not None else ""
+        except Exception:  # pragma: no cover
+            platform = ""
+        limit = 900_000 if platform == "qq_official" else 2_000_000
+        if size <= limit:
+            return str(path)
+        try:
+            data, suffix = compress_image_bytes(target.read_bytes(), max_side=1536, quality=85)
+        except Exception:  # pragma: no cover
+            return str(path)
+        if not suffix or len(data) >= size:
+            return str(path)
+        out = target.with_name(target.stem + "_send" + suffix)
+        try:
+            out.write_bytes(data)
+        except OSError:  # pragma: no cover
+            return str(path)
+        logger.info(
+            "[TsukiyoMedia] 发送前压缩：%s KB -> %s KB（platform=%s）",
+            size // 1024,
+            len(data) // 1024,
+            platform or "unknown",
+        )
+        return str(out)
 
     # ------------------------------------------------------------------ 工具方法
     def _help_text(self) -> str:
