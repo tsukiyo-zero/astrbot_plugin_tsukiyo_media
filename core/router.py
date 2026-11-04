@@ -43,9 +43,7 @@ _SELFIE_PATTERNS = [
 _STYLE_HINTS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"像素|pixel|8bit|8-bit", re.I), "pixel"),
     (re.compile(r"柔光|肤感|soft\s*light|柔焦", re.I), "miao"),
-    (re.compile(r"厚涂块面|748", re.I), "748cm"),
-    (re.compile(r"诺拜|noobai", re.I), "noobai"),
-    (re.compile(r"华丽|厚涂|细节满|ornate", re.I), "wai"),
+    (re.compile(r"华丽|厚涂|细节满|ornate", re.I), "obsession"),
 ]
 
 

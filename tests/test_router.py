@@ -62,7 +62,7 @@ class TestSelectModel(unittest.TestCase):
 
     def test_style_hint_from_prompt(self) -> None:
         self.assertEqual(select_model(CATALOG, "来个像素风的房间")[0].key, "pixel")
-        self.assertEqual(select_model(CATALOG, "厚涂块面风格的人像")[0].key, "748cm")
+        self.assertEqual(select_model(CATALOG, "华丽风格的人像")[0].key, "obsession")
 
     def test_model_name_in_hint(self) -> None:
         """用户原话里点名模型/别名时优先用它。"""
@@ -78,17 +78,16 @@ class TestSelectModel(unittest.TestCase):
     def test_ascii_alias_needs_word_boundary(self) -> None:
         """短 key 不能命中更长的英文单词（原 cat/concatenate 用例）。"""
         entry, _ = select_model(CATALOG, "a concatenate experiment")
-        self.assertNotEqual(entry.key, "748cm")
+        self.assertNotEqual(entry.key, "pixel")
 
-    def test_ascii_key_not_matched_from_translated_tags(self) -> None:
-        """`748` 出现在普通 tag 里不能抢走模型选择。"""
+    def test_style_hint_inside_normal_tags(self) -> None:
+        """普通 tag 里出现风格词时按风格选档位。"""
         entry, _ = select_model(CATALOG, "pixel art, 8bit, cat girl, cat ears")
-        self.assertNotEqual(entry.key, "748cm")
         self.assertEqual(entry.key, "pixel")
 
     def test_ascii_key_with_lead_word(self) -> None:
-        entry, reason = select_model(CATALOG, "a room", hint="用748cm画一个房间")
-        self.assertEqual(entry.key, "748cm")
+        entry, reason = select_model(CATALOG, "a room", hint="用pixel画一个房间")
+        self.assertEqual(entry.key, "pixel")
         self.assertTrue(reason.startswith("name:"))
 
     def test_chinese_alias_from_hint(self) -> None:
