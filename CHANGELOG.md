@@ -159,7 +159,7 @@
 ### 新增
 - ComfyUI HTTP 客户端：`/prompt`、`/history/{id}`、`/view`、`/upload/image`、`/queue`、`/interrupt`
 - 工作流**图结构绑定**（`binder.py`）：顺着 `KSampler` 连线推断正/负向、latent、save，自动识别 IP-Adapter 身份参考图与 img2img 源图；不写死 node id
-- 后端契约 `backends/base.py`：`MediaBackend` / `RenderPlan` / `Asset`，为在线 API 与视频预留扩展点
+- 后端契约 `backends/base.py`：`MediaBackend` / `RenderPlan` / `Asset`，为在线 API 预留扩展点
 - 四条链路：`text2img` / `selfie` / `reference` / `edit`
 - 模型目录 `models.json`：`author_params` 默认只读、支持别名与标签、热重载（`/img reload`）
 - 自动选模：风格关键词 → 模型；显式 `model=` 优先；无命中回落默认

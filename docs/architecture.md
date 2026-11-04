@@ -2,7 +2,7 @@
 
 ## 目标
 
-一个**低耦合**的生成插件：能连本地 ComfyUI，也能连在线 API，以后还能出视频；
+一个**低耦合**的生成插件：能连本地 ComfyUI，也能连在线 API；
 不做陪伴面板、不持有任何人设/关系/日程状态。
 
 ## 分层
@@ -70,12 +70,6 @@ class MediaBackend(Protocol):
 3. 新增 `backends/openai_image/`，实现 `render` 时走 `/v1/images/generations`
 4. 配置从 `comfyui: {...}` 升级为 `backends: {comfyui_local: {...}, api_remote: {...}}` + `routing.default_backend`
 5. 配置迁移：保留旧键读取，写新键（`schema_version` 自增），不破坏老用户
-
-### 视频（v0.3）
-
-- `ImageRequest.modality = "video"`，`Asset.modality = "video"` + `meta{duration,fps}`
-- ComfyUI 侧用 `SaveVideo` / `VHS_VideoCombine` 节点，binder 增加 `video_save` 角色
-- 命令/工具层加 `tsukiyo_video_generate`，与 `tsukiyo_image_generate` 并列
 
 ## 不做什么
 

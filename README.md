@@ -1,6 +1,6 @@
 # astrbot_plugin_tsukiyo_media · 月夜绘影
 
-一个**低耦合**的 AstrBot 生成插件：把「一段描述」变成「一张图」（后续扩展到视频）。
+一个**低耦合**的 AstrBot 生成插件：把「一段描述」变成「一张图」。
 
 - 后端可换：现在手动配置本地 ComfyUI（HTTP API），预留在线 API 后端
 - 四条链路：文生图 · 自拍（IP-Adapter 身份参考）· 编辑（img2img）· 参考图生图
@@ -222,7 +222,6 @@ tests/                      不依赖网络的单元测试
 | v0.1 | ComfyUI | 手动配置 `comfyui.base_url`，走本地 HTTP |
 | v0.2（当前） | ComfyUI + 可视化页面 | Studio 页面可看状态、选模型、生成、看历史 |
 | v0.3 | 在线图片 API | 新增 `backends/openai_image/`，实现同一个 `MediaBackend` 契约 |
-| v0.4 | 视频 | 增加 `modality=video`，`Asset` 已预留视频元数据字段 |
 
 `backends/base.py` 里的 `MediaBackend` 就是那条缝：实现 `health / render / close` 三件套即可接入，
 流水线、命令、提示词层都不用改。详见 `docs/architecture.md`。
@@ -234,7 +233,6 @@ tests/                      不依赖网络的单元测试
 - [x] 设置页（连接 / 默认参数 / 三档工作流 / 路径 / 模型启用与默认）+ 保存热重建
 - [ ] 抽出 `MediaBackend` 并落地在线 API 后端（`backends/openai_image`）
 - [ ] 生成历史持久化（重启后 `/img last` 与 Studio 历史仍可用）
-- [ ] 视频生成（`modality=video`）
 - [ ] LLM 辅助选模（`routing.mode=llm`，规则兜底）
 - [ ] 任务队列与取消、并发上限可视化
 - [ ] hires 二次细化、局部重绘（SAM）

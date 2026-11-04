@@ -1,9 +1,9 @@
-"""后端抽象：所有生成后端（ComfyUI / 在线 API / 未来的视频模型）都要满足这个契约。
+"""后端抽象：所有生成后端（ComfyUI / 在线 API）都要满足这个契约。
 
 v0.1 只有 ComfyUI 一个实现，`ImagePipeline` 仍直接持有 `ComfyUIClient`；
 v0.2 起 `ImagePipeline` 只依赖本文件里的 `MediaBackend`，从而做到“换后端不改流水线”。
 
-为什么要提前定：插件的定位是低耦合 + 可扩展（本地 ComfyUI、在线 API、后续视频），
+为什么要提前定：插件的定位是低耦合 + 可扩展（本地 ComfyUI、在线 API），
 如果让 pipeline 直接长在 ComfyUI 的 submit/wait/fetch 上，接第二个后端时必然要拆它。
 """
 from __future__ import annotations
@@ -17,15 +17,13 @@ CAP_TEXT2IMG = "text2img"
 CAP_SELFIE = "selfie"
 CAP_EDIT = "edit"
 CAP_REFERENCE = "reference"
-CAP_VIDEO = "video"
 
 MODALITY_IMAGE = "image"
-MODALITY_VIDEO = "video"
 
 
 @dataclass
 class Asset:
-    """一个产物。v0.1 只有图片，视频复用同一结构（带 duration/fps 元数据）。"""
+    """一个产物（图片）。"""
 
     path: Path
     modality: str = MODALITY_IMAGE
@@ -68,7 +66,7 @@ class MediaBackend(Protocol):
         ...
 
     async def render(self, plan: RenderPlan) -> list[Asset]:
-        """执行一次渲染，返回产物列表（视频就是 1 个 mp4）。"""
+        """执行一次渲染，返回产物列表。"""
         ...
 
     async def close(self) -> None:
