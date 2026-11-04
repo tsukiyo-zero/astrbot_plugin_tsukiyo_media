@@ -33,80 +33,6 @@
         "肤感"
       ]
     },
-    "cat": {
-      "label": "清漫",
-      "group": "anime",
-      "desc": "干净清爽",
-      "workflow": "text2img/draw-cat.json",
-      "aliases": [
-        "清漫",
-        "cat"
-      ],
-      "tags": [
-        "动漫",
-        "干净"
-      ]
-    },
-    "fabricated": {
-      "label": "赛璐璐",
-      "group": "anime",
-      "desc": "经典动画风",
-      "workflow": "text2img/draw-fabricated.json",
-      "aliases": [
-        "赛璐璐",
-        "cel",
-        "fabricated"
-      ],
-      "tags": [
-        "动漫",
-        "赛璐璐"
-      ]
-    },
-    "illustrious": {
-      "label": "基础",
-      "group": "anime",
-      "desc": "稳定不出错",
-      "workflow": "text2img/draw-illustrious.json",
-      "aliases": [
-        "基础",
-        "illustrious"
-      ],
-      "tags": [
-        "动漫",
-        "基础模型"
-      ]
-    },
-    "lemon": {
-      "label": "甜彩",
-      "group": "anime",
-      "desc": "明亮甜系",
-      "workflow": "text2img/draw-lemon.json",
-      "aliases": [
-        "甜彩",
-        "lemon"
-      ],
-      "tags": [
-        "动漫",
-        "明亮",
-        "甜"
-      ]
-    },
-    "novaflat": {
-      "label": "通透",
-      "group": "anime",
-      "desc": "平涂质感",
-      "workflow": "text2img/draw-novaflat.json",
-      "aliases": [
-        "通透",
-        "nova",
-        "novaflat"
-      ],
-      "tags": [
-        "动漫",
-        "通透",
-        "平涂"
-      ]
-    },
     "pixel": {
       "label": "像素",
       "group": "anime",
@@ -118,21 +44,6 @@
       ],
       "tags": [
         "像素风"
-      ]
-    },
-    "xxmix": {
-      "label": "写实",
-      "group": "real",
-      "desc": "标准真人摄影风",
-      "workflow": "text2img/draw-xxmix.json",
-      "aliases": [
-        "写实",
-        "realistic",
-        "xxmix"
-      ],
-      "tags": [
-        "写实",
-        "人像"
       ]
     },
     "wai": {

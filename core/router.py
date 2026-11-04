@@ -42,13 +42,10 @@ _SELFIE_PATTERNS = [
 #: 自动选模的风格提示词 → 模型 key（先匹配先生效）
 _STYLE_HINTS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"像素|pixel|8bit|8-bit", re.I), "pixel"),
-    (re.compile(r"写实|照片|photoreal|realistic|真人", re.I), "xxmix"),
-    (re.compile(r"赛璐璐|cel\s*shad|动画截图", re.I), "fabricated"),
-    (re.compile(r"通透|平涂|flat\s*color|清爽", re.I), "novaflat"),
-    (re.compile(r"甜|明亮|bright|pastel|马卡龙", re.I), "lemon"),
     (re.compile(r"柔光|肤感|soft\s*light|柔焦", re.I), "miao"),
-    (re.compile(r"干净|清漫|简洁", re.I), "cat"),
-    (re.compile(r"华丽|厚涂|细节满|ornate", re.I), "obsession"),
+    (re.compile(r"厚涂块面|748", re.I), "748cm"),
+    (re.compile(r"诺拜|noobai", re.I), "noobai"),
+    (re.compile(r"华丽|厚涂|细节满|ornate", re.I), "wai"),
 ]
 
 
