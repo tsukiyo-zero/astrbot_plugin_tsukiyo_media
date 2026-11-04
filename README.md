@@ -40,6 +40,25 @@ git clone https://github.com/tsukiyo-zero/astrbot_plugin_tsukiyo_media.git
 
 设置页的「自检」会直接指出哪一步没做对：地址填错（Docker 里填了 `127.0.0.1`）、工作流缺失、模型引用的文件不存在、目录不可写、自拍参考图没配……
 
+### 本地配置放哪（不要写进仓库）
+
+仓库里的 `models.json` 与 `workflows/` 只是**通用示例**。你自己那套底模、档位、调好的工作流属于本机配置，应该放在数据目录，这样升级插件、`git pull` 都不会互相覆盖：
+
+```
+data/plugin_data/astrbot_plugin_tsukiyo_media/
+├── models.json      ← 你的档位表
+└── workflows/       ← 你的工作流（text2img/selfie/reference/edit）
+```
+
+在「设置 → 路径」里把两处指过去即可（支持绝对路径）：
+
+| 配置项 | 指向 |
+|---|---|
+| `paths.catalog` | `/AstrBot/data/plugin_data/astrbot_plugin_tsukiyo_media/models.json` |
+| `paths.workflow_dir` | `/AstrBot/data/plugin_data/astrbot_plugin_tsukiyo_media/workflows` |
+
+工作流里引用的底模/LoRA 只在本机存在，示例工作流不保证拿来就能跑——按「第一次使用」三步换成你自己的即可。
+
 ## 命令
 
 ```
